@@ -8,8 +8,9 @@ env:
   - HUTCH_ENABLE_HTTP_API_USE=false
 dist: xenial
 addons:
-  packages:
-    - rabbitmq-server
+  apt:
+    packages:
+      - rabbitmq-server
 services:
   - rabbitmq
 before_install: gem install bundler -v 2.1.4
