@@ -4,7 +4,7 @@ cache: bundler
 rvm:
   - 2.7.2
 env:
-  - HUTCH_URI="amqp://guest:guest@localhost:5672"
+  - HUTCH_URI="amqp://guest:guest@127.0.0.1/"
   - HUTCH_ENABLE_HTTP_API_USE=false
 services:
   - rabbitmq
