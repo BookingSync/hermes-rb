@@ -1,0 +1,120 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://127.0.0.1:5672/api/exchanges
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Content-Type:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '263'
+      Content-Security-Policy:
+      - default-src 'self'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 08 Mar 2019 08:54:18 GMT
+      Server:
+      - Cowboy
+      Vary:
+      - accept, accept-encoding, origin
+    body:
+      encoding: UTF-8
+      string: '[{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"","type":"direct","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.direct","type":"direct","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.fanout","type":"fanout","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.headers","type":"headers","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.match","type":"headers","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":true,"name":"amq.rabbitmq.trace","type":"topic","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.topic","type":"topic","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"message_stats":{"publish_in":74,"publish_in_details":{"rate":0.0},"publish_out":79,"publish_out_details":{"rate":0.0}},"name":"hutch","type":"topic","user_who_performed_action":"guest","vhost":"/"}]'
+    http_version: 
+  recorded_at: Fri, 08 Mar 2019 08:54:19 GMT
+- request:
+    method: get
+    uri: http://127.0.0.1:5672/api/bindings
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Content-Type:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '312'
+      Content-Security-Policy:
+      - default-src 'self'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 08 Mar 2019 08:54:18 GMT
+      Server:
+      - Cowboy
+      Vary:
+      - accept, accept-encoding, origin
+    body:
+      encoding: UTF-8
+      string: '[{"source":"","vhost":"/","destination":"bsa_secure.payment.escrow_date_updated.queue","destination_type":"queue","routing_key":"bsa_secure.payment.escrow_date_updated.queue","arguments":{},"properties_key":"bsa_secure.payment.escrow_date_updated.queue"},{"source":"","vhost":"/","destination":"bsa_secure_payment.escrow_date_updated_queue","destination_type":"queue","routing_key":"bsa_secure_payment.escrow_date_updated_queue","arguments":{},"properties_key":"bsa_secure_payment.escrow_date_updated_queue"},{"source":"","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_event_producer","destination_type":"queue","routing_key":"fake_consumer_for_testing_integration_between_hutch_and_event_producer","arguments":{},"properties_key":"fake_consumer_for_testing_integration_between_hutch_and_event_producer"},{"source":"","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq","destination_type":"queue","routing_key":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq","arguments":{},"properties_key":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq"},{"source":"","vhost":"/","destination":"payment_consumer","destination_type":"queue","routing_key":"payment_consumer","arguments":{},"properties_key":"payment_consumer"},{"source":"hutch","vhost":"/","destination":"bsa_secure.payment.escrow_date_updated.queue","destination_type":"queue","routing_key":"payment.escrow_date_updated","arguments":{},"properties_key":"payment.escrow_date_updated"},{"source":"hutch","vhost":"/","destination":"bsa_secure_payment.escrow_date_updated_queue","destination_type":"queue","routing_key":"payment.escrow_date_updated","arguments":{},"properties_key":"payment.escrow_date_updated"},{"source":"hutch","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_event_producer","destination_type":"queue","routing_key":"hutch.integration_spec_with_event_producer","arguments":{},"properties_key":"hutch.integration_spec_with_event_producer"},{"source":"hutch","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq","destination_type":"queue","routing_key":"rabbit_mq.integration_spec_with_hutch","arguments":{},"properties_key":"rabbit_mq.integration_spec_with_hutch"},{"source":"hutch","vhost":"/","destination":"payment_consumer","destination_type":"queue","routing_key":"payment.escrow_date_updated","arguments":{},"properties_key":"payment.escrow_date_updated"}]'
+    http_version: 
+  recorded_at: Fri, 08 Mar 2019 08:54:19 GMT
+- request:
+    method: get
+    uri: http://127.0.0.1:5672/api/bindings
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Content-Type:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '312'
+      Content-Security-Policy:
+      - default-src 'self'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 08 Mar 2019 08:54:19 GMT
+      Server:
+      - Cowboy
+      Vary:
+      - accept, accept-encoding, origin
+    body:
+      encoding: UTF-8
+      string: '[{"source":"","vhost":"/","destination":"bsa_secure.payment.escrow_date_updated.queue","destination_type":"queue","routing_key":"bsa_secure.payment.escrow_date_updated.queue","arguments":{},"properties_key":"bsa_secure.payment.escrow_date_updated.queue"},{"source":"","vhost":"/","destination":"bsa_secure_payment.escrow_date_updated_queue","destination_type":"queue","routing_key":"bsa_secure_payment.escrow_date_updated_queue","arguments":{},"properties_key":"bsa_secure_payment.escrow_date_updated_queue"},{"source":"","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_event_producer","destination_type":"queue","routing_key":"fake_consumer_for_testing_integration_between_hutch_and_event_producer","arguments":{},"properties_key":"fake_consumer_for_testing_integration_between_hutch_and_event_producer"},{"source":"","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq","destination_type":"queue","routing_key":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq","arguments":{},"properties_key":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq"},{"source":"","vhost":"/","destination":"payment_consumer","destination_type":"queue","routing_key":"payment_consumer","arguments":{},"properties_key":"payment_consumer"},{"source":"hutch","vhost":"/","destination":"bsa_secure.payment.escrow_date_updated.queue","destination_type":"queue","routing_key":"payment.escrow_date_updated","arguments":{},"properties_key":"payment.escrow_date_updated"},{"source":"hutch","vhost":"/","destination":"bsa_secure_payment.escrow_date_updated_queue","destination_type":"queue","routing_key":"payment.escrow_date_updated","arguments":{},"properties_key":"payment.escrow_date_updated"},{"source":"hutch","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_event_producer","destination_type":"queue","routing_key":"hutch.integration_spec_with_event_producer","arguments":{},"properties_key":"hutch.integration_spec_with_event_producer"},{"source":"hutch","vhost":"/","destination":"fake_consumer_for_testing_integration_between_hutch_and_rabbit_mq","destination_type":"queue","routing_key":"rabbit_mq.integration_spec_with_hutch","arguments":{},"properties_key":"rabbit_mq.integration_spec_with_hutch"},{"source":"hutch","vhost":"/","destination":"payment_consumer","destination_type":"queue","routing_key":"payment.escrow_date_updated","arguments":{},"properties_key":"payment.escrow_date_updated"}]'
+    http_version: 
+  recorded_at: Fri, 08 Mar 2019 08:54:19 GMT
+recorded_with: VCR 4.0.0
