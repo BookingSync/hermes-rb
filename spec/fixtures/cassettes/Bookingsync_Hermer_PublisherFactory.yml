@@ -1,0 +1,42 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://127.0.0.1:5672/api/exchanges
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Content-Type:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '261'
+      Content-Security-Policy:
+      - default-src 'self'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 08 Mar 2019 08:56:48 GMT
+      Server:
+      - Cowboy
+      Vary:
+      - accept, accept-encoding, origin
+    body:
+      encoding: UTF-8
+      string: '[{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"","type":"direct","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.direct","type":"direct","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.fanout","type":"fanout","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.headers","type":"headers","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.match","type":"headers","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":true,"name":"amq.rabbitmq.trace","type":"topic","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"name":"amq.topic","type":"topic","user_who_performed_action":"rmq-internal","vhost":"/"},{"arguments":{},"auto_delete":false,"durable":true,"internal":false,"message_stats":{"publish_in":76,"publish_in_details":{"rate":0.0},"publish_out":80,"publish_out_details":{"rate":0.0}},"name":"hutch","type":"topic","user_who_performed_action":"guest","vhost":"/"}]'
+    http_version: 
+  recorded_at: Fri, 08 Mar 2019 08:56:48 GMT
+recorded_with: VCR 4.0.0
