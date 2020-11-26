@@ -70,7 +70,7 @@ end
 
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
 5. `event_handler` - an instance of event handler/storage, just use what is shown in the example.
-6. `clock` - a clock object that is time-zone aware, implementing `now` method. Since Hermes is decoupled from Rails and ActiveSupport, it doesn't know about `Time.zone` etc., so you need to inject it yourself (if you use Rails).
+6. `clock` - a clock object that is time-zone aware, implementing `now` method.
 7. `correlation_uuid_generator` - to have an easily trackable saga of the events, it's a good idea to registerer correlation IDs. Even better if it's something that you also use for audit log like PaperTrailVersions. That way, it's easier to think about side effects. Here, the application uses the generator that is shared with PaperTrailVersions. If you don't care about correlation UUIDs, just use `SecureRandom`. The expected interface is `uuid` method that is going to return some uuid and that's it.
 
 ``` rb
@@ -92,25 +92,31 @@ end
 
 Note that it uses `RequestStore`, which is an external dependency. To reuse this class, you need to install `request_store` and `request_store-sidekiq` gems.
 8. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
-9. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events shoyld ideally be subclasses of the following base class:
+9. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
+
+This class inherits from `Dry::Struct`, so getting familiar with [dry-struct gem](https://dry-rb.org/gems/dry-struct/) would be beneficial. Here is an example event:
 
 ``` rb
-class Events::BaseEvent < Dry::Struct
-  def self.routing_key
-    to_s.split("::")[1..-1].map(&:underscore).map(&:downcase).join(".")
-  end
-
-  def routing_key
-    self.class.routing_key
-  end
-
-  def version
-    1
-  end
+class Payment::MarkedAsPaid < Hermes::BaseEvent
+  attribute :payment_id, Types::Strict::Integer
+  attribute :cents, Types::Strict::Integer
+  attribute :currency, Types::Strict::String
 end
 ```
 
-That also implies that you need to add `dry-types` and `dry-struct` gems and use their API to define attributes or provide custom `as_json` method for serialization and implement the same interface for initializing objects as `dry-struct` does if you don't want to introduce extra dependencies.
+To keep things clean, you might want to prefix the namespace with `Events`:
+
+``` rb
+class Events::Payment::MarkedAsPaid < Hermes::BaseEvent
+  attribute :payment_id, Types::Strict::Integer
+  attribute :cents, Types::Strict::Integer
+  attribute :currency, Types::Strict::String
+end
+```
+
+In both cases, the routing key will be the same (`Events` prefix is dropped) and will resolve to `payment.marked_as_paid`
+
+To avoid unexpected problems, don't use restricted names for attribtes such as `meta`, `routing_key`, `preceeding_event`.
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
@@ -134,7 +140,7 @@ module Instrumenter
 end
 ```
 
-If you don't care about it, just use `Hermes::NullInstrumenter`.
+If you don't care about it, you can leave it empty.
 
 ### RPC
 

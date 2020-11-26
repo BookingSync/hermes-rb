@@ -1,6 +1,7 @@
 require "hutch"
 require "timecop"
 require "vcr"
+require "dry/struct"
 require "hermes-rb"
 
 Dir["./spec/support/**/*.rb"].sort.each { |f| require f }
@@ -22,5 +23,9 @@ RSpec.configure do |config|
 
   config.after(:each) do
     Hermes::Publisher.instance.reset
+  end
+
+  module Types
+    include Dry.Types()
   end
 end

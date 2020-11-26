@@ -1,3 +1,4 @@
+require "hermes/base_event"
 require "hermes/configuration"
 require "hermes/consumer_builder"
 require "hermes/event_handler"
@@ -10,6 +11,9 @@ require "hermes/rpc_client"
 require "hermes/null_instrumenter"
 require "hermes/logger"
 require "hermes/rb"
+require "dry/struct"
+require "active_support"
+require "active_support/core_ext/string"
 
 module Hermes
   def self.configuration
