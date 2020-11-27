@@ -91,6 +91,7 @@ end
 ```
 
 Note that it uses `RequestStore`, which is an external dependency. To reuse this class, you need to install `request_store` and `request_store-sidekiq` gems.
+
 8. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
 9. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events shoyld ideally be subclasses of the following base class:
 
@@ -115,7 +116,6 @@ That also implies that you need to add `dry-types` and `dry-struct` gems and use
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
 10. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later).
-
 11. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
 
 For example:
