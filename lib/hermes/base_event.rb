@@ -3,7 +3,14 @@ module Hermes
     EVENTS_NAMESPACE = "Events".freeze
     private_constant :EVENTS_NAMESPACE
 
-    attr_accessor :preceeding_event
+    attr_accessor :origin_body, :origin_headers
+
+    def self.from_body_and_headers(body, headers)
+      new(body.deep_symbolize_keys).tap do |event|
+        event.origin_body = body
+        event.origin_headers = headers
+      end
+    end
 
     def self.routing_key
       names = to_s.split("::")
@@ -25,6 +32,19 @@ module Hermes
 
     def as_json
       to_h.stringify_keys
+    end
+
+    def to_headers
+      Hermes::B3PropagationModelHeaders
+        .new(trace_context)
+        .as_json
+        .merge("service" => trace_context.service)
+    end
+
+    private
+
+    def trace_context
+      Hermes::TraceContext.new(origin_headers)
     end
   end
 end

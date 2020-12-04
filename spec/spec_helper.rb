@@ -21,6 +21,20 @@ RSpec.configure do |config|
     Timecop.freeze(Time.now.round) { example.run }
   end
 
+  config.around(:example, :with_application_prefix) do |example|
+    original_application_prefix = Hermes.configuration
+
+    Hermes.configure do |config|
+      config.application_prefix = "app_prefix"
+    end
+
+    example.run
+
+    Hermes.configure do |config|
+      config.application_prefix = original_application_prefix
+    end
+  end
+
   config.after(:each) do
     Hermes::Publisher.instance.reset
   end

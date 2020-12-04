@@ -1,11 +1,11 @@
 require "spec_helper"
 
-RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_time do
+RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_time, :with_application_prefix do
   describe "publishing" do
     subject(:publish) { Hermes::EventProducer.build.publish(event) }
 
     let(:event) do
-      Class.new do
+      Class.new(Hermes::BaseEvent) do
         def as_json
           {
             message: "bookingsync + rabbit = :hearts:"
@@ -33,6 +33,15 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
               correlation_uuid: correlation_uuid_generator.uuid,
               event_version: 1
             }
+          },
+          properties: {
+            headers: {
+              "X-B3-TraceId" => "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acded5f5636980d86d68d",
+              "X-B3-ParentSpanId" => nil,
+              "X-B3-SpanId" => "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acde;YXBwX3ByZWZpeA==",
+              "X-B3-Sampled" => "",
+              "service"=>"app_prefix"
+            }
           }
         }
       ]
@@ -57,6 +66,8 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
       Hermes::Publisher.instance.current_adapter = in_memory_publisher
       Hermes.configuration.clock = clock
       Hermes.configuration.correlation_uuid_generator = correlation_uuid_generator
+
+      allow(SecureRandom).to receive(:hex) { "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acded5f5636980d86d68d" }
     end
 
     it "publishes messages that can be consumed by the other consumer with a proper payload" do

@@ -6,7 +6,7 @@ RSpec.describe Hermes::ConsumerBuilder do
 
     let(:builder) { Hermes::ConsumerBuilder.new }
 
-    class EventClassForTestingConsumerBuilder
+    class EventClassForTestingConsumerBuilder < Hermes::BaseEvent
       def self.routing_key
         "routing_key.for_consumer_test"
       end
@@ -15,11 +15,7 @@ RSpec.describe Hermes::ConsumerBuilder do
         "EventClassForTestingConsumerBuilder"
       end
 
-      attr_reader :payload
-
-      def initialize(payload)
-        @payload = payload
-      end
+      attribute :bookingsync, Types::Nominal::String
     end
     let(:configuration) { Hermes.configuration }
     let(:background_processor) do
@@ -30,8 +26,8 @@ RSpec.describe Hermes::ConsumerBuilder do
           @store = []
         end
 
-        def call(event, payload)
-          store << [event, payload]
+        def call(event, body, headers)
+          store << [event, body, headers]
         end
       end.new
     end
@@ -69,7 +65,11 @@ RSpec.describe Hermes::ConsumerBuilder do
         end
 
         def properties
-          OpenStruct.new(reply_to: "bookingsync_queue", correlation_id: "bookingsync_123")
+          OpenStruct.new(
+            reply_to: "bookingsync_queue",
+            correlation_id: "bookingsync_123",
+            headers: { header: "value" }
+          )
         end
 
         def delivery_info
@@ -88,7 +88,11 @@ RSpec.describe Hermes::ConsumerBuilder do
         end
 
         def publish(response, routing_key:, correlation_id:)
-          @messages << OpenStruct.new(response: response, routing_key: routing_key, correlation_id: correlation_id)
+          @messages << OpenStruct.new(
+            response: response,
+            routing_key: routing_key,
+            correlation_id: correlation_id
+          )
         end
       end.new
     end
@@ -140,9 +144,10 @@ RSpec.describe Hermes::ConsumerBuilder do
           consumer.new.process(message)
 
           expect(background_processor.store).to eq [
-            ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }]
+            ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }, { header: "value" }]
           ]
           expect(dummy_logger.log).to eq "[Hutch] enqueued: EventClassForTestingConsumerBuilder with {\"bookingsync\"=>true} at 2020-01-01 12:00:00"
+
         end
 
         it "is instrumented" do
@@ -179,7 +184,9 @@ RSpec.describe Hermes::ConsumerBuilder do
             }.not_to change { fake_exchange.messages.count }
 
             expect(handler.event).to be_instance_of(EventClassForTestingConsumerBuilder)
-            expect(handler.event.payload).to eq(bookingsync: true)
+            expect(handler.event.bookingsync).to eq true
+            expect(handler.event.origin_body).to eq("bookingsync" => true)
+            expect(handler.event.origin_headers).to eq(header: "value")
           end
 
           it "is instrumented" do
@@ -203,7 +210,9 @@ RSpec.describe Hermes::ConsumerBuilder do
             }.to change { fake_exchange.messages.count }.by(1)
 
             expect(handler.event).to be_instance_of(EventClassForTestingConsumerBuilder)
-            expect(handler.event.payload).to eq(bookingsync: true)
+            expect(handler.event.bookingsync).to eq(true)
+            expect(handler.event.origin_body).to eq("bookingsync" => true)
+            expect(handler.event.origin_headers).to eq(header: "value")
             expect(fake_exchange.messages.first.response).to eq("{\"processed\":true}")
             expect(fake_exchange.messages.first.routing_key).to eq("bookingsync_queue")
             expect(fake_exchange.messages.first.correlation_id).to eq("bookingsync_123")

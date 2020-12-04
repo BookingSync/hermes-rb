@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Event Producer Integration With Hutch Publisher" do
+RSpec.describe "Event Producer Integration With Hutch Publisher", :with_application_prefix do
   class FakeConsumerForTestingIntegrationBetweenHutchAndEventProducer
     include Hutch::Consumer
     consume "hutch.integration_spec_with_event_producer"
@@ -15,7 +15,7 @@ RSpec.describe "Event Producer Integration With Hutch Publisher" do
 
     let(:do_whatever_it_takes_to_avoid_flaky_mess) { sleep 0.5 }
     let(:event) do
-      Class.new do
+      Class.new(Hermes::BaseEvent) do
         def as_json
           {
             message: "bookingsync + rabbit = :hearts:"

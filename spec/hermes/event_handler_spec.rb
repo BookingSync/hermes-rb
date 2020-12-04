@@ -4,12 +4,12 @@ RSpec.describe Hermes::EventHandler do
   describe "event handling" do
     subject(:event_handler) { Hermes::EventHandler.new }
 
-    class EventClassForTestingEventHandler
+    class EventClassForTestingEventHandler < Hermes::BaseEvent
       def self.routing_key
         "routing_key.for_event_handler_test"
       end
     end
-    class EventClassForTestingSynchronousEventHandler
+    class EventClassForTestingSynchronousEventHandler < Hermes::BaseEvent
       def self.routing_key
         "routing_key.for_event_handler_test_synchronous"
       end
@@ -24,8 +24,8 @@ RSpec.describe Hermes::EventHandler do
           @store = []
         end
 
-        def call(event, payload)
-          store << [event, payload]
+        def call(event, body, headers)
+          store << [event, body, headers]
         end
       end.new
     end
@@ -40,7 +40,9 @@ RSpec.describe Hermes::EventHandler do
     end
     class HandlerForSynchronousEventClassForTestingEventHandler
     end
-    let(:message) { double(:message, body: { "bookingsync" => true }) }
+    let(:message) do
+      double(:message, body: { "bookingsync" => true }, properties: { headers: { "example" => "value" } })
+    end
 
     before do
       Hermes.configuration.clock = clock
@@ -98,7 +100,7 @@ RSpec.describe Hermes::EventHandler do
       consumer.new.process(message)
 
       expect(background_processor.store).to eq [
-        ["EventClassForTestingEventHandler", { "bookingsync"=>true } ]
+        ["EventClassForTestingEventHandler", { "bookingsync" => true }, { "example" => "value" } ]
       ]
     end
   end

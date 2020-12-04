@@ -16,14 +16,15 @@ module Hermes
         define_method :process do |message|
           instrumenter.instrument("Hermes.Consumer.process") do
             body = message.body
+            headers = message.properties[:headers].to_h
 
             registration = config.event_handler.registration_for(event_class)
 
             if registration.async?
-              config.background_processor.public_send(config.enqueue_method, event_class.to_s, body)
+              config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
               logger.log_enqueued(event_class, body, config.clock.now)
             else
-              response = Hermes::EventProcessor.call(event_class.to_s, body)
+              response = Hermes::EventProcessor.call(event_class.to_s, body, headers)
 
               if registration.rpc?
                 message.delivery_info.channel.default_exchange.publish(

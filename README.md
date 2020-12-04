@@ -54,7 +54,7 @@ Note that not all options are required (could be the case if the application is 
 
 1. `adapter` - messages can be either delivered via RabbitMQ or in-memory adapter (useful for testing). Most likely you will want to make it based on the environment, that's why it's advisable to use `Rails.application.config.async_messaging_adapter` and define `async_messaging_adapter` on `config` object in `development.rb`, `test.rb` and `production.rb` files. The recommended setup is to assign `config.async_messaging_adapter = :in_memory` for test ENV and `config.async_messaging_adapter = :hutch` for production and development ENVs.
 2. `application_prefix` - identifier for this application. **ABSOLUTELY NECESSARY** unless you want to have competing queues with different applications (hint: most likely you don't want that).
-3/4. `background_processor` and `enqueue_method`. By design, Hermes is supposed to use Hutch workers to fetch the messages from RabbitMQ and process them in some background jobs framework. `background_processor` refers to the name of the class for the job and `enqueue_method` is the method name that will be called when enqueuing the job. This method must accept two arguments: `event_class` and `payload`. Here is an example for Sdekiq:
+3/4. `background_processor` and `enqueue_method`. By design, Hermes is supposed to use Hutch workers to fetch the messages from RabbitMQ and process them in some background jobs framework. `background_processor` refers to the name of the class for the job and `enqueue_method` is the method name that will be called when enqueuing the job. This method must accept three arguments: `event_class`, `body` and `headers`. Here is an example for Sidekiq:
 
 ``` rb
 class HermesHandlerJob
@@ -62,8 +62,8 @@ class HermesHandlerJob
 
   sidekiq_options queue: :critical
 
-  def perform(event_class, payload)
-    Hermes::EventProcessor.call(event_class, payload)
+  def perform(event_class, body, headers)
+    Hermes::EventProcessor.call(event_class, body, headers)
   end
 end
 ```
@@ -116,7 +116,7 @@ end
 
 In both cases, the routing key will be the same (`Events` prefix is dropped) and will resolve to `payment.marked_as_paid`
 
-To avoid unexpected problems, don't use restricted names for attribtes such as `meta`, `routing_key`, `preceeding_event`.
+To avoid unexpected problems, don't use restricted names for attribtes such as `meta`, `routing_key`, `origin_event`.
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
@@ -284,7 +284,7 @@ RSpec.describe HermesHandlerJob do
   it { is_expected.to be_processed_in :critical }
 
   describe "#perform" do
-    subject(:perform) { described_class.new.perform(EventClassForTestingHermesHandlerJob.to_s, payload) }
+    subject(:perform) { described_class.new.perform(EventClassForTestingHermesHandlerJob.to_s, payload, headers) }
 
     let(:configuration) { Hermes.configuration }
     let(:event_handler) { Hermes::EventHandler.new }
@@ -293,7 +293,10 @@ RSpec.describe HermesHandlerJob do
         "bookingsync" => "hermes"
       }
     end
-    class EventClassForTestingHermesHandlerJob < Events::BaseEvent
+    let(:headers) do
+      {}
+    end
+    class EventClassForTestingHermesHandlerJob < Hermes::BaseEvent
       attribute :bookingsync, Types::Strict::String
     end
     class HandlerForEventClassForTestingHermesHandlerJob

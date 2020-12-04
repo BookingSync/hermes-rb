@@ -26,7 +26,12 @@ module Hermes
 
     def publish(event, properties = {}, options = {})
       instrumenter.instrument("Hermes.EventProducer.publish") do
-        publisher.publish(event.routing_key, serialize(event.as_json, event.version), properties, options)
+        publisher.publish(
+          event.routing_key,
+          serialize(event.as_json, event.version),
+          properties.merge(headers: event.to_headers),
+          options
+        )
       end
     end
 

@@ -1,12 +1,12 @@
 require "spec_helper"
 
-RSpec.describe "RPC call with Hutch" do
+RSpec.describe "RPC call with Hutch", :with_application_prefix do
   describe "when RPC call is performed" do
     subject(:call) { rpc_client.call(event) }
 
     let(:rpc_client) { Hermes::RpcClient }
 
-    class DummyEventToTestRpcIntegration
+    class DummyEventToTestRpcIntegration < Hermes::BaseEvent
       def self.routing_key
         "hutch.integration_spec_for_rpc"
       end

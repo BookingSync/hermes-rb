@@ -2,24 +2,12 @@ require "spec_helper"
 
 RSpec.describe Hermes::EventProcessor do
   describe ".call" do
-    subject(:call) { described_class.call(EventClassForTestingAsyncMessagingEventProcessor.to_s, payload) }
+    subject(:call) { described_class.call(EventClassForTestingAsyncMessagingEventProcessor.to_s, body, headers) }
 
     let(:configuration) { Hermes.configuration }
     let(:event_handler) { Hermes::EventHandler.new }
-    class EventClassForTestingAsyncMessagingEventProcessor
-      attr_reader :bookingsync
-
-      def initialize(bookingsync: )
-        @bookingsync = bookingsync
-      end
-
-      def self.routing_key
-        to_s.split("::")[1..-1].map(&:underscore).map(&:downcase).join(".")
-      end
-
-      def routing_key
-        self.class.routing_key
-      end
+    class EventClassForTestingAsyncMessagingEventProcessor < Hermes::BaseEvent
+      attribute :bookingsync, Types::Nominal::Hash
     end
     class HandlerForEventClassForTestingAsyncMessagingEventProcessor
       def self.event
@@ -30,11 +18,16 @@ RSpec.describe Hermes::EventProcessor do
         @event = event
       end
     end
-    let(:payload) do
+    let(:body) do
       {
         "bookingsync" => {
           "rabbit" => true
         }
+      }
+    end
+    let(:headers) do
+      {
+        header: "value"
       }
     end
 
@@ -62,7 +55,10 @@ RSpec.describe Hermes::EventProcessor do
       call
 
       expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event).to be_a(EventClassForTestingAsyncMessagingEventProcessor)
+      expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event.origin_body).to eq("bookingsync" => { "rabbit" => true } )
+      expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event.origin_headers).to eq(header: "value")
       expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event.bookingsync).to eq(rabbit: true)
+
     end
 
     it "is instrumented" do
