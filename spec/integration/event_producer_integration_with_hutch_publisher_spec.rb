@@ -32,13 +32,6 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       end.new
     end
     let(:file_path) { "/tmp/rabbit.log" }
-    let(:correlation_uuid_generator) do
-      Class.new do
-        def uuid
-          "#WhateverItTakes"
-        end
-      end.new
-    end
     let(:clock) do
       Class.new do
         def now
@@ -51,7 +44,6 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       hutch_publisher = Hermes::Publisher::HutchAdapter.new
       Hermes::Publisher.instance.current_adapter = hutch_publisher
       Hermes.configuration.clock = clock
-      Hermes.configuration.correlation_uuid_generator = correlation_uuid_generator
 
       @worker_thread = Thread.new do
         Hutch.connect

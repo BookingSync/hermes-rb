@@ -30,7 +30,6 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
             message: "bookingsync + rabbit = :hearts:",
             meta: {
               timestamp: clock.now.iso8601,
-              correlation_uuid: correlation_uuid_generator.uuid,
               event_version: 1
             }
           },
@@ -46,13 +45,6 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
         }
       ]
     end
-    let(:correlation_uuid_generator) do
-      Class.new do
-        def uuid
-          "#WhateverItTakes"
-        end
-      end.new
-    end
     let(:clock) do
       Class.new do
         def now
@@ -65,7 +57,6 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
       in_memory_publisher = Hermes::Publisher::InMemoryAdapter.new
       Hermes::Publisher.instance.current_adapter = in_memory_publisher
       Hermes.configuration.clock = clock
-      Hermes.configuration.correlation_uuid_generator = correlation_uuid_generator
 
       allow(SecureRandom).to receive(:hex) { "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acded5f5636980d86d68d" }
     end

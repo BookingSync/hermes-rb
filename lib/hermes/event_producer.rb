@@ -10,10 +10,9 @@ module Hermes
     end
 
     def self.build
-      correlation_uuid_generator = Hermes.configuration.correlation_uuid_generator
       new(
         publisher: Hermes::Publisher.instance,
-        serializer: Hermes::Serializer.new(correlation_uuid_generator: correlation_uuid_generator),
+        serializer: Hermes::Serializer.new,
         config: Hermes.configuration
       )
     end

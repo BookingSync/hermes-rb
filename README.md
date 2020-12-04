@@ -33,7 +33,6 @@ Rails.application.config.to_prepare do
     config.enqueue_method = :perform_async
     config.event_handler = event_handler
     config.clock = Time.zone
-    config.correlation_uuid_generator = PaperTrail::CorrelationUuid
     config.instrumenter = Instrumenter
     config.configure_hutch do |hutch|
       hutch.uri = ENV.fetch("HUTCH_URI")
@@ -71,28 +70,8 @@ end
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
 5. `event_handler` - an instance of event handler/storage, just use what is shown in the example.
 6. `clock` - a clock object that is time-zone aware, implementing `now` method.
-7. `correlation_uuid_generator` - to have an easily trackable saga of the events, it's a good idea to registerer correlation IDs. Even better if it's something that you also use for audit log like PaperTrailVersions. That way, it's easier to think about side effects. Here, the application uses the generator that is shared with PaperTrailVersions. If you don't care about correlation UUIDs, just use `SecureRandom`. The expected interface is `uuid` method that is going to return some uuid and that's it.
-
-``` rb
-class PaperTrail::CorrelationUuid
-  def self.uuid
-    store[:correlation_uuid] ||= SecureRandom.uuid
-  end
-
-  def self.uuid=(uuid)
-    store[:correlation_uuid] = uuid
-  end
-
-  def self.store
-    RequestStore.store[:paper_trail_extensions] ||= {}
-  end
-  private_class_method :store
-end
-```
-
-Note that it uses `RequestStore`, which is an external dependency. To reuse this class, you need to install `request_store` and `request_store-sidekiq` gems.
-8. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
-9. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
+7. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
+8. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
 
 This class inherits from `Dry::Struct`, so getting familiar with [dry-struct gem](https://dry-rb.org/gems/dry-struct/) would be beneficial. Here is an example event:
 
@@ -120,9 +99,9 @@ To avoid unexpected problems, don't use restricted names for attribtes such as `
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
-10. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later).
+9. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later).
 
-11. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
+10. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
 
 For example:
 

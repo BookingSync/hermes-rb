@@ -13,18 +13,6 @@ RSpec.describe Hermes::Configuration do
     it { is_expected.to eq "bookingsync" }
   end
 
-  describe "correlation_uuid_generator" do
-    subject(:correlation_uuid_generator) { configuration.correlation_uuid_generator }
-
-    let(:configuration) { Hermes::Configuration.new }
-
-    before do
-      configuration.correlation_uuid_generator = "#WhateverItTakes"
-    end
-
-    it { is_expected.to eq "#WhateverItTakes" }
-  end
-
   describe "clock" do
     subject(:clock) { configuration.clock }
 
@@ -36,7 +24,6 @@ RSpec.describe Hermes::Configuration do
 
     it { is_expected.to eq Time }
   end
-
 
   describe "clock" do
     subject(:clock) { configuration.clock }

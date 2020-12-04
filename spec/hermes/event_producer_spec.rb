@@ -32,20 +32,12 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       {
         bookingsync: true,
         meta: {
-          correlation_uuid: correlation_uuid_generator.uuid,
           timestamp: clock.now.iso8601,
           event_version: 1
         }
       }
     end
     let(:expected_routing_key) { "#WhateverItTakes" }
-    let(:correlation_uuid_generator) do
-      Class.new do
-        def uuid
-          "#WhateverItTakes"
-        end
-      end.new
-    end
     let(:clock) do
       Class.new do
         def now
@@ -78,7 +70,6 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
 
     before do
       Hermes.configuration.clock = clock
-      Hermes.configuration.correlation_uuid_generator = correlation_uuid_generator
       Hermes.configuration.adapter = :in_memory
 
       allow(SecureRandom).to receive(:hex) { "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d" }

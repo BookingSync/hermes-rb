@@ -36,13 +36,6 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix do
     end
 
     let(:event) { DummyEventToTestRpcIntegration.new }
-    let(:correlation_uuid_generator) do
-      Class.new do
-        def uuid
-          "#WhateverItTakes"
-        end
-      end.new
-    end
     let(:clock) do
       Class.new do
         def now
@@ -60,7 +53,6 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix do
       config = Hermes.configuration
       Hermes::Publisher.instance.current_adapter = hutch_publisher
       config.clock = clock
-      config.correlation_uuid_generator = correlation_uuid_generator
       config.application_prefix = "bookingsync_hermes"
 
       event_handler = Hermes::EventHandler.new

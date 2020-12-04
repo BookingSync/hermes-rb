@@ -1,6 +1,6 @@
 module Hermes
   class Configuration
-    attr_accessor :adapter, :correlation_uuid_generator, :clock, :hutch, :application_prefix,
+    attr_accessor :adapter, :clock, :hutch, :application_prefix,
                   :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
                   :instrumenter
 
