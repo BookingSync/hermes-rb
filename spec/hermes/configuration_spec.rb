@@ -140,7 +140,17 @@ RSpec.describe Hermes::Configuration do
 
     let(:configuration) { Hermes::Configuration.new }
 
-    it { is_expected.to be_a Hermes::Logger }
+    context "when it's set" do
+      before do
+        configuration.logger = :logger
+      end
+
+      it { is_expected.to eq :logger }
+    end
+
+    context "when it's not set" do
+      it { is_expected.to be_a Hermes::Logger }
+    end
   end
 
   describe "distributed_tracing_database_uri" do

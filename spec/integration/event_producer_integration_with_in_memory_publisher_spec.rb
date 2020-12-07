@@ -6,28 +6,22 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
 
     let(:event) do
       Class.new(Hermes::BaseEvent) do
-        def as_json
-          {
-            message: "bookingsync + rabbit = :hearts:"
-          }
-        end
+        attribute :message, Types::Strict::String
 
         def routing_key
           "bookingsync"
         end
-
-        def version
-          1
-        end
-      end.new
+      end.new(message: message)
     end
+    let(:message) { "bookingsync + rabbit = :hearts:" }
+    let(:configuration) { Hermes.configuration }
     let(:adapter) { Hermes::Publisher.instance.current_adapter }
     let(:expected_store_content) do
       [
         {
           routing_key: "bookingsync",
           payload: {
-            message: "bookingsync + rabbit = :hearts:",
+            "message" => "bookingsync + rabbit = :hearts:",
             meta: {
               timestamp: clock.now.iso8601,
               event_version: 1
@@ -56,9 +50,22 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
     before do
       in_memory_publisher = Hermes::Publisher::InMemoryAdapter.new
       Hermes::Publisher.instance.current_adapter = in_memory_publisher
-      Hermes.configuration.clock = clock
 
       allow(SecureRandom).to receive(:hex) { "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acded5f5636980d86d68d" }
+    end
+
+    around do |example|
+      original_clock = configuration.clock
+
+      Hermes.configure do |config|
+        config.clock = clock
+      end
+
+      example.run
+
+      Hermes.configure do |config|
+        config.clock = original_clock
+      end
     end
 
     it "publishes messages that can be consumed by the other consumer with a proper payload" do

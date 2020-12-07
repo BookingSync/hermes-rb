@@ -1,6 +1,6 @@
 module Hermes
   class Configuration
-    attr_accessor :adapter, :clock, :hutch, :application_prefix,
+    attr_accessor :adapter, :clock, :hutch, :application_prefix, :logger,
       :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
       :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table
 

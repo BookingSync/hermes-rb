@@ -153,7 +153,7 @@ RSpec.describe Hermes::ConsumerBuilder do
           expect(background_processor.store).to eq [
             ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }, { header: "value" }]
           ]
-          expect(dummy_logger.log).to eq "[Hutch] enqueued: EventClassForTestingConsumerBuilder with {\"bookingsync\"=>true} at 2020-01-01 12:00:00"
+          expect(dummy_logger.log).to eq "[Hutch] enqueued: EventClassForTestingConsumerBuilder, headers: {:header=>\"value\"}, body: {\"bookingsync\"=>true} at 2020-01-01 12:00:00"
 
         end
 

@@ -22,7 +22,7 @@ module Hermes
 
             if registration.async?
               config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
-              logger.log_enqueued(event_class, body, config.clock.now)
+              logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
               result = Hermes::EventProcessor.call(event_class.to_s, body, headers)
               event = result.event

@@ -55,10 +55,43 @@ RSpec.describe Hermes::Publisher::HutchAdapter do
         "OneDayYouMay" => true
       }
     end
+    let(:configuration) { Hermes.configuration }
+    let(:clock) do
+      Class.new do
+        def now
+          "timestamp now"
+        end
+      end.new
+    end
+    let(:logger) do
+      Class.new do
+        attr_reader :routing_key, :payload, :properties, :timestamp
+
+        def log_published(routing_key, payload, properties, timestamp)
+          @routing_key = routing_key
+          @payload = payload
+          @properties = properties
+          @timestamp = timestamp
+        end
+      end.new
+    end
 
     around do |example|
+      original_logger = configuration.logger
+      original_clock = configuration.clock
+
+      Hermes.configure do |config|
+        config.logger = logger
+        config.clock = clock
+      end
+
       VCR.use_cassette("Hermes::Publisher::HutchAdapter") do
         example.run
+      end
+
+      Hermes.configure do |config|
+        config.logger = original_logger
+        config.clock = original_clock
       end
     end
 
@@ -80,6 +113,15 @@ RSpec.describe Hermes::Publisher::HutchAdapter do
         expect(Hutch).to receive(:publish).with(routing_key, payload, properties, options).and_call_original
 
         publish
+      end
+
+      it "logs publishing" do
+        expect {
+          publish
+        }.to change { logger.routing_key }.from(nil).to("bookingsync")
+        .and change { logger.payload }.from(nil).to("OneDayYouMay" => true)
+        .and change { logger.properties }.from(nil).to(hash_including(properties: true))
+        .and change { logger.timestamp }.from(nil).to("timestamp now")
       end
     end
 

@@ -17,7 +17,7 @@ module Hermes
       instrumenter.instrument("Hermes.Publisher.HutchAdapter.publish") do
         Hutch.publish(routing_key, payload, properties, options)
       end
-      logger.log_published(routing_key, payload, clock.now)
+      logger.log_published(routing_key, payload, properties, clock.now)
     end
 
     private

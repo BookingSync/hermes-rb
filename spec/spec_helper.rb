@@ -39,6 +39,20 @@ RSpec.configure do |config|
     Hermes::Publisher.instance.reset
   end
 
+  config.before(:example, :with_hutch_worker) do
+    @worker_thread = Thread.new do
+      Hutch.connect
+      worker = Hutch::Worker.new(Hutch.broker, Hutch.consumers, Hutch::Config.setup_procs)
+      worker.run
+    end
+
+    sleep 0.2
+  end
+
+  config.after(:example, :with_hutch_worker) do
+    @worker_thread.kill
+  end
+
   database_name = "hermes-rb-test"
   ENV["DISTRIBUTED_TRACING_DATABASE_URI"] ||= "postgresql://localhost/#{database_name}"
 
