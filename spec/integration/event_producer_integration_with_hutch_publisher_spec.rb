@@ -1,12 +1,13 @@
 require "spec_helper"
 
 RSpec.describe "Event Producer Integration With Hutch Publisher", :with_application_prefix do
-  class FakeConsumerForTestingIntegrationBetweenHutchAndEventProducer
-    include Hutch::Consumer
-    consume "hutch.integration_spec_with_event_producer"
+  class EventForTestingIntegrationWithHutchPublisher < Hermes::BaseEvent
+    attribute :message, Types::Strict::String
+  end
 
-    def process(message)
-      File.write("/tmp/rabbit.log", message.body[:message])
+  class HandlerForTestingIntegrationBetweenHutchAndEventProducer
+    def self.call(event)
+      File.write("/tmp/rabbit.log", event.message)
     end
   end
 
@@ -14,23 +15,8 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
     subject(:publish) { Hermes::EventProducer.build.publish(event) }
 
     let(:do_whatever_it_takes_to_avoid_flaky_mess) { sleep 0.5 }
-    let(:event) do
-      Class.new(Hermes::BaseEvent) do
-        def as_json
-          {
-            message: "bookingsync + rabbit = :hearts:"
-          }
-        end
-
-        def routing_key
-          "hutch.integration_spec_with_event_producer"
-        end
-
-        def version
-          1
-        end
-      end.new
-    end
+    let(:event) { EventForTestingIntegrationWithHutchPublisher.new(message: message) }
+    let(:message) { "bookingsync + rabbit = :hearts:" }
     let(:file_path) { "/tmp/rabbit.log" }
     let(:clock) do
       Class.new do
@@ -39,12 +25,19 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
         end
       end.new
     end
+    let(:event_handler) do
+      Hermes::EventHandler.new.tap do |handler|
+        handler.handle_events do
+          handle EventForTestingIntegrationWithHutchPublisher, with: HandlerForTestingIntegrationBetweenHutchAndEventProducer,
+                 async: false
+        end
+      end
+    end
+    let(:trace_1) { Hermes::DistributedTrace.order(:id).first }
+    let(:trace_2) { Hermes::DistributedTrace.order(:id).second }
+    let(:configuration) { Hermes.configuration }
 
     before do
-      hutch_publisher = Hermes::Publisher::HutchAdapter.new
-      Hermes::Publisher.instance.current_adapter = hutch_publisher
-      Hermes.configuration.clock = clock
-
       @worker_thread = Thread.new do
         Hutch.connect
         worker = Hutch::Worker.new(Hutch.broker, Hutch.consumers, Hutch::Config.setup_procs)
@@ -55,10 +48,17 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
     end
 
     around do |example|
-      original_distributed_tracing_database_uri = Hermes.configuration.distributed_tracing_database_uri
+      hutch_publisher = Hermes::Publisher::HutchAdapter.new
+      Hermes::Publisher.instance.current_adapter = hutch_publisher
+
+      original_distributed_tracing_database_uri = configuration.distributed_tracing_database_uri
+      original_event_handler = configuration.event_handler
+      original_clock = configuration.clock
 
       Hermes.configure do |config|
         config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
+        config.event_handler = event_handler
+        config.clock = clock
       end
 
       VCR.use_cassette("hutch.integration_spec_with_event_producer") do
@@ -67,6 +67,8 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
 
       Hermes.configure do |config|
         config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
+        config.event_handler = original_event_handler
+        config.clock = original_clock
       end
     end
 
@@ -83,10 +85,16 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       expect(File.read(file_path)).to eq "bookingsync + rabbit = :hearts:"
     end
 
-    it "creates traces" do
+    it "creates traces: client - server" do
       expect {
         publish
-      }.to change { Hermes::DistributedTrace.count }.by(1)
+      }.to change { Hermes::DistributedTrace.count }.by(2)
+
+      expect([trace_1.trace, trace_2.trace].uniq).to eq [trace_1.trace]
+      expect([trace_1.span, trace_2.span].uniq).to eq [trace_1.span]
+      expect([trace_1.parent_span, trace_2.parent_span]).to match_array [trace_1.span, nil]
+      expect(trace_1.event_class).to eq "EventForTestingIntegrationWithHutchPublisher"
+      expect(trace_2.event_class).to eq "EventForTestingIntegrationWithHutchPublisher"
     end
   end
 end
