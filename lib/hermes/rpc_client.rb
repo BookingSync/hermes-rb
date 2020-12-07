@@ -10,12 +10,15 @@ module Hermes
       new.call(event)
     end
 
-    attr_reader :broker, :config, :lock, :condition, :response, :rpc_call_timeout, :consumer, :connection
-    private     :broker, :config, :lock, :condition, :response, :rpc_call_timeout, :consumer, :connection
+    attr_reader :broker, :config, :distributed_trace_repository, :lock, :condition,
+      :response_body, :response_headers, :rpc_call_timeout, :consumer, :connection
+    private     :broker, :config, :distributed_trace_repository, :lock, :condition,
+      :response_body, :response_headers, :rpc_call_timeout, :consumer, :connection
 
-    def initialize(publisher: Hermes::Publisher.instance,
-    config: Hermes.configuration, rpc_call_timeout: nil)
+    def initialize(publisher: Hermes::Publisher.instance, config: Hermes.configuration,
+      distributed_trace_repository: default_distributed_trace_repository, rpc_call_timeout: nil)
       @config = config
+      @distributed_trace_repository = distributed_trace_repository
       @broker = Hutch::Broker.new
       instrumenter.instrument("Hermes.RpcClient.broker_connect") do
         @connection = broker.open_connection
@@ -24,8 +27,8 @@ module Hermes
       @condition = ConditionVariable.new
       @rpc_call_timeout = rpc_call_timeout || config.rpc_call_timeout
       @consumer = Bunny::Consumer.new(channel, DIRECT_REPLY_TO, SecureRandom.uuid)
-      consumer.on_delivery do |_, _, received_payload|
-        handle_delivery(received_payload)
+      consumer.on_delivery do |_delivery_info, metadata, received_payload|
+        handle_delivery(metadata[:headers].to_h, received_payload)
       end
     end
 
@@ -38,9 +41,11 @@ module Hermes
             options = {
               routing_key: event.routing_key,
               reply_to: DIRECT_REPLY_TO,
-              persistence: false
+              persistence: false,
+              headers: event.to_headers
             }
             topic_exchange.publish(event.as_json.to_json, options)
+            distributed_trace_repository.create(event)
             condition.wait(lock, rpc_call_timeout)
           end
         end
@@ -52,12 +57,17 @@ module Hermes
       end
 
       close_connection
-      response && JSON.parse(response) or raise RpcTimeoutError
+      handle_response
     end
 
     private
 
     def_delegators :config, :instrumenter
+
+    def default_distributed_trace_repository
+      Hermes::DistributedTraceRepository.new(config: Hermes.configuration,
+        distributed_trace_database: Hermes::DistributedTrace)
+    end
 
     def channel
       @channel ||= connection.create_channel
@@ -71,8 +81,9 @@ module Hermes
       @topic_exchange ||= channel.topic(Hutch::Config.mq_exchange, durable: true)
     end
 
-    def handle_delivery(payload)
-      @response = payload
+    def handle_delivery(headers, payload)
+      @response_headers = headers
+      @response_body = JSON.parse(payload)
       lock.synchronize { condition.signal }
     end
 
@@ -83,7 +94,27 @@ module Hermes
       end
     end
 
+    def handle_response
+      if response_body
+        distributed_trace_repository.create(response_event)
+        response_body
+      else
+        raise RpcTimeoutError
+      end
+    end
+
+    def response_event
+      ResponseEvent.new(response_body: response_body).tap do |event|
+        event.origin_headers = response_headers
+        event.origin_body = response_body
+      end
+    end
+
     class RpcTimeoutError < StandardError
+    end
+
+    class ResponseEvent < Hermes::BaseEvent
+      attribute :response_body, Dry.Types::Nominal::Hash
     end
   end
 end

@@ -72,11 +72,29 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix do
       sleep 0.2
     end
 
+    around do |example|
+      original_distributed_tracing_database_uri = Hermes.configuration.distributed_tracing_database_uri
+
+      Hermes.configure do |config|
+        config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
+      end
+
+      example.run
+
+      Hermes.configure do |config|
+        config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
+      end
+    end
+
     after do
       @worker_thread.kill
     end
 
     context "when client receives a response from the server" do
+      let(:trace_1) { Hermes::DistributedTrace.order(:id).first }
+      let(:trace_2) { Hermes::DistributedTrace.order(:id).second }
+      let(:trace_3) { Hermes::DistributedTrace.order(:id).third }
+
       it "returns a parsed response from server" do
         response = call
 
@@ -97,6 +115,21 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix do
         expect(instrumenter).to have_received(:instrument).with("Hermes.RpcClient.broker_connect")
         expect(instrumenter).to have_received(:instrument).with("Hermes.RpcClient.call")
         expect(instrumenter).to have_received(:instrument).with("Hermes.RpcClient.close_connection")
+      end
+
+      it "creates traces: client - server - client" do
+        expect {
+          call
+        }.to change { Hermes::DistributedTrace.count }.by(3)
+
+        expect([trace_1.trace, trace_2.trace, trace_3.trace].uniq).to eq [trace_1.trace]
+        expect([trace_1.span, trace_2.span, trace_3.span].uniq).to eq [trace_1.span]
+        expect(trace_1.parent_span).to eq nil
+        expect(trace_2.parent_span).to eq trace_1.span
+        expect(trace_3.parent_span).to eq trace_2.span
+        expect(trace_1.event_class).to eq "DummyEventToTestRpcIntegration"
+        expect(trace_2.event_class).to eq "DummyEventToTestRpcIntegration"
+        expect(trace_3.event_class).to eq "Hermes::RpcClient::ResponseEvent"
       end
     end
 

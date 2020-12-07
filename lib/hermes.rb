@@ -13,9 +13,11 @@ require "hermes/logger"
 require "hermes/rb"
 require "hermes/b_3_propagation_model_headers"
 require "hermes/trace_context"
+require "hermes/distributed_trace_repository"
 require "dry/struct"
 require "active_support"
 require "active_support/core_ext/string"
+require "active_record"
 
 module Hermes
   def self.configuration
@@ -26,3 +28,5 @@ module Hermes
     yield configuration
   end
 end
+
+require "hermes/distributed_trace"

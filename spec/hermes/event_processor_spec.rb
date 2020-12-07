@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Hermes::EventProcessor do
+RSpec.describe Hermes::EventProcessor, :with_application_prefix do
   describe ".call" do
     subject(:call) { described_class.call(EventClassForTestingAsyncMessagingEventProcessor.to_s, body, headers) }
 
@@ -16,6 +16,7 @@ RSpec.describe Hermes::EventProcessor do
 
       def self.call(event)
         @event = event
+        "response"
       end
     end
     let(:body) do
@@ -39,15 +40,18 @@ RSpec.describe Hermes::EventProcessor do
 
     around do |example|
       original_event_handler = configuration.event_handler
+      original_distributed_tracing_database_uri = configuration.distributed_tracing_database_uri
 
       Hermes.configure do |config|
         config.event_handler = event_handler
+        config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
       end
 
       example.run
 
       Hermes.configure do |config|
         config.event_handler = original_event_handler
+        config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
       end
     end
 
@@ -58,7 +62,6 @@ RSpec.describe Hermes::EventProcessor do
       expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event.origin_body).to eq("bookingsync" => { "rabbit" => true } )
       expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event.origin_headers).to eq(header: "value")
       expect(HandlerForEventClassForTestingAsyncMessagingEventProcessor.event.bookingsync).to eq(rabbit: true)
-
     end
 
     it "is instrumented" do
@@ -67,6 +70,19 @@ RSpec.describe Hermes::EventProcessor do
         .and_call_original
 
       call
+    end
+
+    it "returns result response from the event handler and the event" do
+      expect(call.response).to eq "response"
+      expect(call.event).to be_instance_of(EventClassForTestingAsyncMessagingEventProcessor)
+    end
+
+    it "stores distributed trace" do
+      expect {
+        call
+      }.to change { Hermes::DistributedTrace.count }.by(1)
+
+      expect(Hermes::DistributedTrace.last.event_class).to eq "EventClassForTestingAsyncMessagingEventProcessor"
     end
   end
 end

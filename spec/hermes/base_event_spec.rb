@@ -213,4 +213,10 @@ RSpec.describe Hermes::BaseEvent do
       it { is_expected.to eq headers }
     end
   end
+
+  describe "#trace_context" do
+    subject(:trace_context) { event.trace_context }
+
+    it { is_expected.to be_a Hermes::TraceContext }
+  end
 end

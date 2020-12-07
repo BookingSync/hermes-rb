@@ -121,7 +121,13 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
   end
 
   describe "#publish" do
-    let(:producer) { Hermes::EventProducer.new(publisher: publisher, serializer: serializer) }
+    let(:producer) do
+      Hermes::EventProducer.new(
+        publisher: publisher,
+        serializer: serializer,
+        distributed_trace_repository: distributed_trace_repository
+      )
+    end
     let(:publisher) { Hermes::Publisher::InMemoryAdapter.new }
     let(:serializer) do
       Class.new do
@@ -176,6 +182,15 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       }
     end
     let(:expected_routing_key) { "#WhateverItTakes" }
+    let(:distributed_trace_repository) do
+      Class.new do
+        attr_reader :event
+
+        def create(event)
+          @event = event
+        end
+      end.new
+    end
 
     before do
       allow(SecureRandom).to receive(:hex).with(32) { "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d" }
@@ -196,6 +211,12 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
           }
         ]
       end
+
+      it "stores trace" do
+        expect {
+          publish
+        }.to change { distributed_trace_repository.event }.from(nil).to(event)
+      end
     end
 
     context "when properties/options are not passed" do
@@ -212,6 +233,12 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
           }
         ]
       end
+
+      it "stores trace" do
+        expect {
+          publish
+        }.to change { distributed_trace_repository.event }.from(nil).to(event)
+      end
     end
 
     describe "instrumentation" do
@@ -220,6 +247,9 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       it "is instrumented" do
         expect(Hermes.configuration.instrumenter).to receive(:instrument)
           .with("Hermes.EventProducer.publish")
+          .and_call_original
+        expect(Hermes.configuration.instrumenter).to receive(:instrument)
+          .with("Hermes.EventProducer.store_trace")
           .and_call_original
 
         publish

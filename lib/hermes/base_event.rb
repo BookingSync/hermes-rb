@@ -41,10 +41,8 @@ module Hermes
         .merge("service" => trace_context.service)
     end
 
-    private
-
     def trace_context
-      Hermes::TraceContext.new(origin_headers)
+      @trace_context ||= Hermes::TraceContext.new(origin_headers)
     end
   end
 end

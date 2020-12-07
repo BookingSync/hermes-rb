@@ -24,13 +24,16 @@ module Hermes
               config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
               logger.log_enqueued(event_class, body, config.clock.now)
             else
-              response = Hermes::EventProcessor.call(event_class.to_s, body, headers)
+              result = Hermes::EventProcessor.call(event_class.to_s, body, headers)
+              event = result.event
+              response = result.response
 
               if registration.rpc?
                 message.delivery_info.channel.default_exchange.publish(
                   response.to_json,
                   routing_key: message.properties.reply_to,
-                  correlation_id: message.properties.correlation_id
+                  correlation_id: message.properties.correlation_id,
+                  headers: event.to_headers
                 )
               end
             end

@@ -55,8 +55,18 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
     end
 
     around do |example|
+      original_distributed_tracing_database_uri = Hermes.configuration.distributed_tracing_database_uri
+
+      Hermes.configure do |config|
+        config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
+      end
+
       VCR.use_cassette("hutch.integration_spec_with_event_producer") do
         example.run
+      end
+
+      Hermes.configure do |config|
+        config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
       end
     end
 
@@ -71,6 +81,12 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       do_whatever_it_takes_to_avoid_flaky_mess
 
       expect(File.read(file_path)).to eq "bookingsync + rabbit = :hearts:"
+    end
+
+    it "creates traces" do
+      expect {
+        publish
+      }.to change { Hermes::DistributedTrace.count }.by(1)
     end
   end
 end

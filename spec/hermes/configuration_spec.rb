@@ -142,4 +142,58 @@ RSpec.describe Hermes::Configuration do
 
     it { is_expected.to be_a Hermes::Logger }
   end
+
+  describe "distributed_tracing_database_uri" do
+    subject(:distributed_tracing_database_uri) { configuration.distributed_tracing_database_uri }
+
+    let(:configuration) { Hermes::Configuration.new }
+
+    context "when it's set" do
+      before do
+        configuration.distributed_tracing_database_uri = :distributed_tracing_database_uri
+      end
+
+      it { is_expected.to eq :distributed_tracing_database_uri }
+    end
+
+    context "when it's not set" do
+      it { is_expected.to eq nil }
+    end
+  end
+
+  describe "store_distributed_traces?" do
+    subject(:store_distributed_traces?) { configuration.store_distributed_traces? }
+
+    let(:configuration) { Hermes::Configuration.new }
+
+    context "when distributed_tracing_database_uri set" do
+      before do
+        configuration.distributed_tracing_database_uri = :distributed_tracing_database_uri
+      end
+
+      it { is_expected.to eq true }
+    end
+
+    context "when distributed_tracing_database_uri is not set" do
+      it { is_expected.to eq false }
+    end
+  end
+
+  describe "distributed_tracing_database_table?" do
+    subject(:distributed_tracing_database_table) { configuration.distributed_tracing_database_table }
+
+    let(:configuration) { Hermes::Configuration.new }
+
+    context "when distributed_tracing_database_table set" do
+      before do
+        configuration.distributed_tracing_database_table = "example_table_name"
+      end
+
+      it { is_expected.to eq "example_table_name" }
+    end
+
+    context "when distributed_tracing_database_uri is not set" do
+      it { is_expected.to eq "hermes_distributed_traces" }
+    end
+  end
 end
