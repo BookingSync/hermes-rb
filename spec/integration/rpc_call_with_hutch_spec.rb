@@ -100,7 +100,12 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_work
         }.to change { Hermes::DistributedTrace.count }.by(3)
 
         expect([trace_1.trace, trace_2.trace, trace_3.trace].uniq).to eq [trace_1.trace]
-        expect([trace_1.span, trace_2.span, trace_3.span].uniq).to eq [trace_1.span]
+        expect(trace_1.span).to include "bookingsync_her"
+        expect(trace_1.span).to include trace_1.trace[0..10]
+        expect(trace_2.span).to include "bookingsync_her"
+        expect(trace_2.span).to include trace_1.trace[0..10]
+        expect(trace_3.span).to include "bookingsync_her"
+        expect(trace_3.span).to include trace_1.trace[0..10]
         expect(trace_1.parent_span).to eq nil
         expect(trace_2.parent_span).to eq trace_1.span
         expect(trace_3.parent_span).to eq trace_2.span

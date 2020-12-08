@@ -33,8 +33,9 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
         end
       end
     end
-    let(:trace_1) { Hermes::DistributedTrace.order(:id).first }
-    let(:trace_2) { Hermes::DistributedTrace.order(:id).second }
+    let(:trace_1) { Hermes::DistributedTrace.order(:created_at).first }
+    let(:trace_2) { Hermes::DistributedTrace.order(:created_at).second }
+    let(:first_trace) { Hermes::DistributedTrace.find_by!(parent_span: nil) }
     let(:configuration) { Hermes.configuration }
 
     around do |example|
@@ -81,8 +82,11 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       }.to change { Hermes::DistributedTrace.count }.by(2)
 
       expect([trace_1.trace, trace_2.trace].uniq).to eq [trace_1.trace]
-      expect([trace_1.span, trace_2.span].uniq).to eq [trace_1.span]
-      expect([trace_1.parent_span, trace_2.parent_span]).to match_array [trace_1.span, nil]
+      expect(trace_1.span).to include "app_prefix"
+      expect(trace_1.span).to include trace_1.trace[0..10]
+      expect(trace_2.span).to include "app_prefix"
+      expect(trace_2.span).to include trace_1.trace[0..10]
+      expect([trace_1.parent_span, trace_2.parent_span]).to match_array [nil, first_trace.span]
       expect(trace_1.event_class).to eq "EventForTestingIntegrationWithHutchPublisher"
       expect(trace_2.event_class).to eq "EventForTestingIntegrationWithHutchPublisher"
     end

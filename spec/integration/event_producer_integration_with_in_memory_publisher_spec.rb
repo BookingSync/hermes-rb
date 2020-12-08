@@ -31,7 +31,7 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
             headers: {
               "X-B3-TraceId" => "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acded5f5636980d86d68d",
               "X-B3-ParentSpanId" => nil,
-              "X-B3-SpanId" => "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acde;YXBwX3ByZWZpeA==",
+              "X-B3-SpanId" => "cca9d9fc4e33e58a;app_prefix;14e09a10-70e8-49f5-9665-e65858865f90",
               "X-B3-Sampled" => "",
               "service"=>"app_prefix"
             }
@@ -52,6 +52,7 @@ RSpec.describe "Event Producer Integration With In MemoryPublisher", :freeze_tim
       Hermes::Publisher.instance.current_adapter = in_memory_publisher
 
       allow(SecureRandom).to receive(:hex) { "cca9d9fc4e33e58aca38f0c14bd3e39a5690fc9d8b9acded5f5636980d86d68d" }
+      allow(SecureRandom).to receive(:uuid) { "14e09a10-70e8-49f5-9665-e65858865f90" }
     end
 
     around do |example|

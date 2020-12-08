@@ -21,9 +21,6 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
         current_event.origin_headers = { "X-B3-SpanId" => "parent-span-123" }
       end
     end
-    let(:trace_context) do
-      double(:trace_context, trace: "trace", span: "span", parent_span: "parent_span", service: "service")
-    end
     let(:distributed_trace_database) do
       Class.new do
         attr_reader :attributes
@@ -34,12 +31,16 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
       end.new
     end
 
+    before do
+      allow(SecureRandom).to receive(:uuid) { "c288d2c7-6903-4825-8aec-c3fcc2aa0045" }
+    end
+
     context "when it should store distributed traces" do
       let(:store_distributed_traces) { true }
       let(:expected_attributes) do
         {
           trace: "c1b84b37d8a8aa78dc04536c321c1af05a57a57ff4b45e6598da22acc345fcb6",
-          span: "c1b84b37d8a8aa78dc04536c321c1af05a57a57ff4b45e6;YXBwX3ByZWZpeA==",
+          span: "c1b84b37d8a8aa78;app_prefix;c288d2c7-6903-4825-8aec-c3fcc2aa0045",
           parent_span: "parent-span-123",
           service: "app_prefix",
           event_class: "Events::Payment::Created",
@@ -48,7 +49,7 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
           event_headers: {
             "X-B3-TraceId" => "c1b84b37d8a8aa78dc04536c321c1af05a57a57ff4b45e6598da22acc345fcb6",
             "X-B3-ParentSpanId" => "parent-span-123",
-            "X-B3-SpanId" => "c1b84b37d8a8aa78dc04536c321c1af05a57a57ff4b45e6;YXBwX3ByZWZpeA==",
+            "X-B3-SpanId" => "c1b84b37d8a8aa78;app_prefix;c288d2c7-6903-4825-8aec-c3fcc2aa0045",
             "X-B3-Sampled"=> "",
             "service"=>"app_prefix"
           }

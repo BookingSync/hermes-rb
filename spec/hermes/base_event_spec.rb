@@ -149,21 +149,11 @@ RSpec.describe Hermes::BaseEvent do
     end
   end
 
-  describe "#to_headers" do
+  describe "#to_headers", :with_application_prefix do
     subject(:to_headers) { event.to_headers }
 
-    around do |example|
-      original_application_prefix = Hermes.configuration
-
-      Hermes.configure do |config|
-        config.application_prefix = "app_prefix"
-      end
-
-      example.run
-
-      Hermes.configure do |config|
-        config.application_prefix = original_application_prefix
-      end
+    before do
+      allow(SecureRandom).to receive(:uuid) { "092f6bbd-4163-450b-a264-7c30e807fa88" }
     end
 
     context "when origin headers are set" do
@@ -180,7 +170,7 @@ RSpec.describe Hermes::BaseEvent do
         {
           "X-B3-TraceId" => trace_id,
           "X-B3-ParentSpanId" => "123-abc-123",
-          "X-B3-SpanId" => "8f5d7272fa0fef3e060889edd33198adf1b17d854254343;YXBwX3ByZWZpeA==",
+          "X-B3-SpanId" => "8f5d7272fa0fef3e;app_prefix;092f6bbd-4163-450b-a264-7c30e807fa88",
           "X-B3-Sampled" => "",
           "service" => "app_prefix"
         }
@@ -204,7 +194,7 @@ RSpec.describe Hermes::BaseEvent do
         {
           "X-B3-TraceId" => trace_id,
           "X-B3-ParentSpanId" => nil,
-          "X-B3-SpanId" => "840b519a3da037686c2bee33ea5fce629c02de77ac48300;YXBwX3ByZWZpeA==",
+          "X-B3-SpanId" => "840b519a3da03768;app_prefix;092f6bbd-4163-450b-a264-7c30e807fa88",
           "X-B3-Sampled" => "",
           "service" => "app_prefix"
         }

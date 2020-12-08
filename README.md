@@ -196,7 +196,7 @@ end
 Some important attributes to understand and that will be useful during potential debugging:
 
 1. `trace` - ID of the trace - all events from the same saga will have the same value (and that's why it's important to properly deal with `origin_headers`).
-2. `span` - ID of the operation in the trace tree.
+2. `span` - ID of the operation.
 3. `parent span` - span value of the previous operation from the previous service.
 4. `service` - name of the service where the given even occured, based on `application_prefix`,  
  

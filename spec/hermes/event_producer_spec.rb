@@ -57,7 +57,7 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       {
         "X-B3-TraceId" => "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d",
         "X-B3-ParentSpanId" => nil,
-        "X-B3-SpanId" => "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c6128;YXBwX3ByZWZpeA==",
+        "X-B3-SpanId" => "5354b4aee6ec3db2;app_prefix;8f49e235-87e0-40b0-9d28-64398d6541ee",
         "X-B3-Sampled" => "",
         "service" => "app_prefix"
       }
@@ -67,17 +67,29 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
         options: true
       }
     end
+    let(:config) { Hermes.configuration }
 
     before do
-      Hermes.configuration.clock = clock
-      Hermes.configuration.adapter = :in_memory
-
       allow(SecureRandom).to receive(:hex) { "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d" }
+      allow(SecureRandom).to receive(:uuid) { "8f49e235-87e0-40b0-9d28-64398d6541ee" }
     end
 
     around do |example|
+      original_clock = config.clock
+      original_adapter = config.adapter
+
+      Hermes.configure do |configuration|
+        configuration.clock = clock
+        configuration.adapter = :in_memory
+      end
+
       VCR.use_cassette("Hermes::EventProducer") do
         example.run
+      end
+
+      Hermes.configure do |configuration|
+        configuration.clock = original_clock
+        configuration.adapter = original_adapter
       end
     end
 
@@ -166,7 +178,7 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       {
         "X-B3-TraceId" => "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d",
         "X-B3-ParentSpanId" => nil,
-        "X-B3-SpanId" => "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c6128;YXBwX3ByZWZpeA==",
+        "X-B3-SpanId" => "5354b4aee6ec3db2;app_prefix;8f49e235-87e0-40b0-9d28-64398d6541ee",
         "X-B3-Sampled" => "",
         "service" => "app_prefix"
       }
@@ -196,6 +208,7 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
 
     before do
       allow(SecureRandom).to receive(:hex).with(32) { "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d" }
+      allow(SecureRandom).to receive(:uuid) { "8f49e235-87e0-40b0-9d28-64398d6541ee" }
     end
 
     context "when properties/options are passed" do
