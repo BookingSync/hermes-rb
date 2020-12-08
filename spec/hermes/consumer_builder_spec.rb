@@ -163,7 +163,7 @@ RSpec.describe Hermes::ConsumerBuilder do
           process
         end
 
-        it "does not creates any traces (because the event is enqueued for processing, not being processed)" do
+        it "does not create any traces (because the event is enqueued for processing, not being processed)" do
           expect {
             process
           }.not_to change { Hermes::DistributedTrace.count }

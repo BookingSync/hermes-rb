@@ -93,7 +93,7 @@ RSpec.describe Hermes::TraceContext do
         expect(span.size).to eq 64
       end
 
-      it "cuts application's name is cut to at most 15 characters" do
+      it "cuts application's name to at most 15 characters" do
         expect(span).to eq "2a13a846170;a_very_long_app;4e92e02e-045e-4487-8d51-fa7f1b7e777b"
         expect(span.split(";")[1].size).to eq 15
       end

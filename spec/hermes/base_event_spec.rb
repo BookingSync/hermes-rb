@@ -47,7 +47,7 @@ RSpec.describe Hermes::BaseEvent do
       }
     end
 
-    it "initializes event with assigning origin_body and origin_headers" do
+    it "initializes event and assigns origin_body and origin_headers" do
       expect(from_body_and_headers).to be_instance_of example_event_class
       expect(from_body_and_headers.payment_id).to eq 1
       expect(from_body_and_headers.cents).to eq 100
