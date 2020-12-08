@@ -125,7 +125,8 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       Hermes::EventProducer.new(
         publisher: publisher,
         serializer: serializer,
-        distributed_trace_repository: distributed_trace_repository
+        distributed_trace_repository: distributed_trace_repository,
+        config: config
       )
     end
     let(:publisher) { Hermes::Publisher::InMemoryAdapter.new }
@@ -191,6 +192,7 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
         end
       end.new
     end
+    let(:config) { Hermes.configuration }
 
     before do
       allow(SecureRandom).to receive(:hex).with(32) { "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d" }

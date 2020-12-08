@@ -43,15 +43,15 @@ module Hermes
         private
 
         def instrumenter
-          config.instrumenter
+          Hermes::DependenciesContainer["instrumenter"]
         end
 
         def logger
-          config.logger
+          Hermes::DependenciesContainer["logger"]
         end
 
         def config
-          Hermes.configuration
+          Hermes::DependenciesContainer["config"]
         end
       end
 
@@ -76,7 +76,7 @@ module Hermes
     end
 
     def config
-      Hermes.configuration
+      Hermes::DependenciesContainer["config"]
     end
   end
 end

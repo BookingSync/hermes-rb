@@ -15,8 +15,10 @@ module Hermes
     private     :broker, :config, :distributed_trace_repository, :lock, :condition,
       :response_body, :response_headers, :rpc_call_timeout, :consumer, :connection
 
-    def initialize(publisher: Hermes::Publisher.instance, config: Hermes.configuration,
-      distributed_trace_repository: default_distributed_trace_repository, rpc_call_timeout: nil)
+    def initialize(publisher: Hermes::DependenciesContainer["publisher"],
+    config: Hermes::DependenciesContainer["config"],
+    distributed_trace_repository: Hermes::DependenciesContainer["distributed_trace_repository"],
+    rpc_call_timeout: nil)
       @config = config
       @distributed_trace_repository = distributed_trace_repository
       @broker = Hutch::Broker.new
@@ -63,11 +65,6 @@ module Hermes
     private
 
     def_delegators :config, :instrumenter
-
-    def default_distributed_trace_repository
-      Hermes::DistributedTraceRepository.new(config: Hermes.configuration,
-        distributed_trace_database: Hermes::DistributedTrace)
-    end
 
     def channel
       @channel ||= connection.create_channel

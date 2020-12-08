@@ -11,17 +11,14 @@ module Hermes
 
     def self.build
       new(
-        publisher: Hermes::Publisher.instance,
-        serializer: Hermes::Serializer.new,
-        distributed_trace_repository: Hermes::DistributedTraceRepository.new(
-          config: Hermes.configuration,
-          distributed_trace_database: Hermes::DistributedTrace
-        ),
-        config: Hermes.configuration
+        publisher: Hermes::DependenciesContainer["publisher"],
+        serializer: Hermes::DependenciesContainer["serializer"],
+        distributed_trace_repository: Hermes::DependenciesContainer["distributed_trace_repository"],
+        config: Hermes::DependenciesContainer["config"]
       )
     end
 
-    def initialize(publisher:, serializer:, distributed_trace_repository:, config: Hermes.configuration)
+    def initialize(publisher:, serializer:, distributed_trace_repository:, config:)
       @publisher = publisher
       @serializer = serializer
       @distributed_trace_repository = distributed_trace_repository

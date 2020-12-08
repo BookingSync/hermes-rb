@@ -5,7 +5,7 @@ module Hermes
     attr_reader :clock
     private     :clock
 
-    def initialize(clock: Hermes.configuration.clock)
+    def initialize(clock: Hermes::DependenciesContainer["clock"])
       @clock = clock
     end
 

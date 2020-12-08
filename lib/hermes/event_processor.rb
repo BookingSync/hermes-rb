@@ -4,15 +4,15 @@ module Hermes
 
     def self.call(event_class, body, headers)
       new(
-        distributed_trace_repository: Hermes::DistributedTraceRepository.new(config: Hermes.configuration,
-          distributed_trace_database: Hermes::DistributedTrace)
+        distributed_trace_repository: Hermes::DependenciesContainer["distributed_trace_repository"],
+        config: Hermes::DependenciesContainer["config"]
       ).call(event_class, body, headers)
     end
 
     attr_reader :distributed_trace_repository, :config
     private     :distributed_trace_repository, :config
 
-    def initialize(distributed_trace_repository:, config: Hermes.configuration)
+    def initialize(distributed_trace_repository:, config:)
       @distributed_trace_repository = distributed_trace_repository
       @config = config
     end
