@@ -53,7 +53,8 @@ Note that not all options are required (could be the case if the application is 
 
 1. `adapter` - messages can be either delivered via RabbitMQ or in-memory adapter (useful for testing). Most likely you will want to make it based on the environment, that's why it's advisable to use `Rails.application.config.async_messaging_adapter` and define `async_messaging_adapter` on `config` object in `development.rb`, `test.rb` and `production.rb` files. The recommended setup is to assign `config.async_messaging_adapter = :in_memory` for test ENV and `config.async_messaging_adapter = :hutch` for production and development ENVs.
 2. `application_prefix` - identifier for this application. **ABSOLUTELY NECESSARY** unless you want to have competing queues with different applications (hint: most likely you don't want that).
-3/4. `background_processor` and `enqueue_method`. By design, Hermes is supposed to use Hutch workers to fetch the messages from RabbitMQ and process them in some background jobs framework. `background_processor` refers to the name of the class for the job and `enqueue_method` is the method name that will be called when enqueuing the job. This method must accept three arguments: `event_class`, `body` and `headers`. Here is an example for Sidekiq:
+
+3 and 4. `background_processor` and `enqueue_method`. By design, Hermes is supposed to use Hutch workers to fetch the messages from RabbitMQ and process them in some background jobs framework. `background_processor` refers to the name of the class for the job and `enqueue_method` is the method name that will be called when enqueuing the job. This method must accept three arguments: `event_class`, `body` and `headers`. Here is an example for Sidekiq:
 
 ``` rb
 class HermesHandlerJob
