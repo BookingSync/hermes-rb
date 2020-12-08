@@ -96,7 +96,7 @@ end
 
 In both cases, the routing key will be the same (`Events` prefix is dropped) and will resolve to `payment.marked_as_paid`
 
-To avoid unexpected problems, don't use restricted names for attribtes such as `meta`, `routing_key`, `origin_event`.
+To avoid unexpected problems, don't use restricted names for attribtes such as `meta`, `routing_key`, `origin_headers`, `origin_body`, `trace_context`, `version`.
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
@@ -159,13 +159,13 @@ If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 If you want to take advantage of distributed tracing, you need to specify `distributed_tracing_database_uri` in the config and in many cases that will be enough, although there are some cases where some extra code will be required to properly use it.
 
 If you don't have any complex sagas, for example, a publisher publishes an event, and some consumers consume it and that's it, then you don't need to do any thing extra as things will be handled out-of-box. In such scenario, at least two `Hermes::DistributedTrace` will be created (one for producer, and the rest for consumers).
-However, if you also need to publish another event from the consumer after consuming the original event, you will need to assign `origin_headers` so that `trace` and `parent span` can be properly preserved. `origin_headers` are the headers coming from the event from the previous service and need to be used for all events in the next service. Here is an example how to do this.
+However, if you also need to publish another event from the consumer after consuming the original event, you will need to assign `origin_headers` so that `trace` and `parent span` can be properly propagated. `origin_headers` are the headers coming from the event from the previous service and need to be used for all events in the next service. Here is an example how to do this.
 
 
 ``` rb
-do_something_as_the_consumer(original_event)
-new_event = build_event
-new_event.origin_heders = original_event.origin_headers
+do_something_as_the_consumer(original_event) # this happens in the event handler 
+new_event = build_event # this as well, it's just the part of the logic
+new_event.origin_headers = original_event.origin_headers
 publish_event(new_event)
 ```
 
@@ -193,12 +193,12 @@ create_table(:hermes_distributed_traces) do |t|
 end 
 ```
 
-Some important attributes to understand and that will be useful during potential debugging:
+Some important attributes to understand which will be useful during potential debugging:
 
 1. `trace` - ID of the trace - all events from the same saga will have the same value (and that's why it's important to properly deal with `origin_headers`).
 2. `span` - ID of the operation.
 3. `parent span` - span value of the previous operation from the previous service.
-4. `service` - name of the service where the given even occured, based on `application_prefix`,  
+4. `service` - name of the service where the given event occured, based on `application_prefix`,
  
 ## Testing
 
