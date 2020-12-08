@@ -122,7 +122,11 @@ end
 
 If you don't care about it, you can leave it empty.
 
-### RPC
+11. `distributed_tracing_database_uri` - If you want to enable distributed tracing, specify Postgres database URI
+
+12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`.
+
+## RPC
 
 If you want to handle RPC call, you need to add `rpc: true` flag. Keep in mind that RPC requires a synchronous processing and response, so you also need to set `async: false`. The routing key and correlation ID will be resolved based on the message that is published by the client. The payload that is sent back will be what event handler reutrns, so it might be a good idea to just return a hash so that you can operate on JSON easily.
 
@@ -150,6 +154,52 @@ parsed_response_hash = Hermes::RpcClient.new(rpc_call_timeout: 10).call(event)
 
 If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 
+## Distributed Tracing
+
+If you want to take advantage of distributed tracing, you need to specify `distributed_tracing_database_uri` in the config and in many cases that will be enough, although there are some cases where some extra code will be required to properly use it.
+
+If you don't have any complex sagas, for example, a publisher publishes an event, and some consumers consume it and that's it, then you don't need to do any thing extra as things will be handled out-of-box. In such scenario, at least two `Hermes::DistributedTrace` will be created (one for producer, and the rest for consumers).
+However, if you also need to publish another event from the consumer after consuming the original event, you will need to assign `origin_headers` so that `trace` and `parent span` can be properly preserved. `origin_headers` are the headers coming from the event from the previous service and need to be used for all events in the next service. Here is an example how to do this.
+
+
+``` rb
+do_something_as_the_consumer(original_event)
+new_event = build_event
+new_event.origin_heders = original_event.origin_headers
+publish_event(new_event)
+```
+
+You will also need to create an appropriate database table:
+
+``` rb
+create_table(:hermes_distributed_traces) do |t|
+  t.string "trace", null: false
+  t.string "span", null: false
+  t.string "parent_span"
+  t.string "service", null: false
+  t.text "event_class", null: false
+  t.text "routing_key", null: false
+  t.jsonb "event_body", null: false, default: []
+  t.jsonb "event_headers", null: false, default: []
+  t.datetime "created_at", precision: 6, null: false
+  t.datetime "updated_at", precision: 6, null: false
+
+  t.index ["created_at"], name: "index_hermes_distributed_traces_on_created_at", using: :brin
+  t.index ["trace"], name: "index_hermes_distributed_traces_on_trace"
+  t.index ["span"], name: "index_hermes_distributed_traces_on_span"
+  t.index ["service"], name: "index_hermes_distributed_traces_on_service"
+  t.index ["event_class"], name: "index_hermes_distributed_traces_on_event_class"
+  t.index ["routing_key"], name: "index_hermes_distributed_traces_on_routing_key"
+end 
+```
+
+Some important attributes to understand and that will be useful during potential debugging:
+
+1. `trace` - ID of the trace - all events from the same saga will have the same value (and that's why it's important to properly deal with `origin_headers`).
+2. `span` - ID of the operation in the trace tree.
+3. `parent span` - span value of the previous operation from the previous service.
+4. `service` - name of the service where the given even occured, based on `application_prefix`,  
+ 
 ## Testing
 
 ### RSpec useful stuff
