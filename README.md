@@ -126,6 +126,8 @@ If you don't care about it, you can leave it empty.
 
 12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`.
 
+13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) that has to return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. The default mapper just returns the original hash. You can use it if you want to remove, for example, some sensitive info from the event's body.
+
 ## RPC
 
 If you want to handle RPC call, you need to add `rpc: true` flag. Keep in mind that RPC requires a synchronous processing and response, so you also need to set `async: false`. The routing key and correlation ID will be resolved based on the message that is published by the client. The payload that is sent back will be what event handler reutrns, so it might be a good idea to just return a hash so that you can operate on JSON easily.

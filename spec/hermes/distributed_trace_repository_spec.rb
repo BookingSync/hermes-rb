@@ -11,7 +11,11 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
     end
 
     let(:repository) do
-      described_class.new(config: config, distributed_trace_database: distributed_trace_database)
+      described_class.new(
+        config: config,
+        distributed_trace_database: distributed_trace_database,
+        distributes_tracing_mapper: distributes_tracing_mapper
+      )
     end
     let(:config) do
       double(:config, store_distributed_traces?: store_distributed_traces)
@@ -27,6 +31,13 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
 
         def create!(attributes)
           @attributes = attributes
+        end
+      end.new
+    end
+    let(:distributes_tracing_mapper) do
+      Class.new do
+        def call(attributes)
+          attributes.merge("extra_attribute" => "from_mapper")
         end
       end.new
     end
@@ -52,7 +63,8 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
             "X-B3-SpanId" => "c1b84b37d8a8aa78;app_prefix;c288d2c7-6903-4825-8aec-c3fcc2aa0045",
             "X-B3-Sampled"=> "",
             "service"=>"app_prefix"
-          }
+          },
+          "extra_attribute" => "from_mapper"
         }
       end
 

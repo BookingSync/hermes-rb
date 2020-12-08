@@ -176,7 +176,7 @@ RSpec.describe Hermes::Configuration do
 
     let(:configuration) { Hermes::Configuration.new }
 
-    context "when distributed_tracing_database_uri set" do
+    context "when distributed_tracing_database_uri is set" do
       before do
         configuration.distributed_tracing_database_uri = :distributed_tracing_database_uri
       end
@@ -189,12 +189,12 @@ RSpec.describe Hermes::Configuration do
     end
   end
 
-  describe "distributed_tracing_database_table?" do
+  describe "distributed_tracing_database_table" do
     subject(:distributed_tracing_database_table) { configuration.distributed_tracing_database_table }
 
     let(:configuration) { Hermes::Configuration.new }
 
-    context "when distributed_tracing_database_table set" do
+    context "when distributed_tracing_database_table is set" do
       before do
         configuration.distributed_tracing_database_table = "example_table_name"
       end
@@ -204,6 +204,44 @@ RSpec.describe Hermes::Configuration do
 
     context "when distributed_tracing_database_uri is not set" do
       it { is_expected.to eq "hermes_distributed_traces" }
+    end
+  end
+
+  describe "distributes_tracing_mapper" do
+    subject(:distributes_tracing_mapper) { configuration.distributes_tracing_mapper }
+
+    let(:configuration) { Hermes::Configuration.new }
+    let(:attributes) do
+      {
+        event_class: "name",
+        event_body: "body"
+      }
+    end
+
+    context "when distributes_tracing_mapper is set" do
+      context "when the object responds to :call method" do
+        before do
+          configuration.distributes_tracing_mapper = ->(attrs) { attrs.slice(:event_class) }
+        end
+
+        it "returns that mapper" do
+          expect(distributes_tracing_mapper.call(attributes)).to eq(event_class: "name")
+        end
+      end
+
+      context "when the object does not respond to :call method" do
+        it "raises error" do
+          expect {
+            configuration.distributes_tracing_mapper = :invalid
+          }.to raise_error ArgumentError
+        end
+      end
+    end
+
+    context "when distributed_tracing_database_uri is not set" do
+      it "returns the default mapper" do
+        expect(distributes_tracing_mapper.call(attributes)).to eq(attributes)
+      end
     end
   end
 end

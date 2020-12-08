@@ -39,8 +39,13 @@ module Hermes
     def self.distributed_trace_repository
       Hermes::DistributedTraceRepository.new(
         config: config,
-        distributed_trace_database: Hermes::DistributedTrace
+        distributed_trace_database: Hermes::DistributedTrace,
+        distributes_tracing_mapper: distributes_tracing_mapper
       )
+    end
+
+    def self.distributes_tracing_mapper
+      config.distributes_tracing_mapper
     end
   end
 end

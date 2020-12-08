@@ -2,7 +2,8 @@ module Hermes
   class Configuration
     attr_accessor :adapter, :clock, :hutch, :application_prefix, :logger,
       :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
-      :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table
+      :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table,
+      :distributes_tracing_mapper
 
     def configure_hutch
       yield hutch
@@ -34,6 +35,15 @@ module Hermes
 
     def distributed_tracing_database_table
       @distributed_tracing_database_table || "hermes_distributed_traces"
+    end
+
+    def distributes_tracing_mapper=(mapper)
+      raise ArgumentError.new("mapper must espond to :call method") if !mapper.respond_to?(:call)
+      @distributes_tracing_mapper = mapper
+    end
+
+    def distributes_tracing_mapper
+      @distributes_tracing_mapper || ->(attributes) { attributes }
     end
 
     class HutchConfig
