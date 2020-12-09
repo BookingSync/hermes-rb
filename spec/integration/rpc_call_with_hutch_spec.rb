@@ -1,32 +1,13 @@
 require "spec_helper"
 
-RSpec.describe "RPC call with Hutch" do
+RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_worker do
   describe "when RPC call is performed" do
     subject(:call) { rpc_client.call(event) }
 
     let(:rpc_client) { Hermes::RpcClient }
 
-    class DummyEventToTestRpcIntegration
-      def self.routing_key
-        "hutch.integration_spec_for_rpc"
-      end
-
-      def initialize(*)
-      end
-
-      def routing_key
-        self.class.routing_key
-      end
-
-      def as_json
-        {
-          message: "bookingsync + rabbit = :hearts:"
-        }
-      end
-
-      def version
-        1
-      end
+    class DummyEventToTestRpcIntegration < Hermes::BaseEvent
+      attribute :message, Types::Strict::String
     end
 
     class DummyEventToTestRpcIntegrationHandler
@@ -35,14 +16,8 @@ RSpec.describe "RPC call with Hutch" do
       end
     end
 
-    let(:event) { DummyEventToTestRpcIntegration.new }
-    let(:correlation_uuid_generator) do
-      Class.new do
-        def uuid
-          "#WhateverItTakes"
-        end
-      end.new
-    end
+    let(:event) { DummyEventToTestRpcIntegration.new(message: message) }
+    let(:message) { "bookingsync + rabbit = :hearts:" }
     let(:clock) do
       Class.new do
         def now
@@ -50,41 +25,53 @@ RSpec.describe "RPC call with Hutch" do
         end
       end.new
     end
-    let(:instrumenter) { Hermes.configuration.instrumenter }
+    let(:configuration) { Hermes.configuration }
+    let(:instrumenter) { configuration.instrumenter }
+    let(:event_handler) do
+      Hermes::EventHandler.new.tap do |handler|
+        handler.handle_events do
+          handle DummyEventToTestRpcIntegration, with: DummyEventToTestRpcIntegrationHandler,
+            async: false, rpc: true
+        end
+      end
+    end
 
     before do
       allow(instrumenter).to receive(:instrument).and_call_original
 
       hutch_publisher = Hermes::Publisher::HutchAdapter.new
-
-      config = Hermes.configuration
       Hermes::Publisher.instance.current_adapter = hutch_publisher
-      config.clock = clock
-      config.correlation_uuid_generator = correlation_uuid_generator
-      config.application_prefix = "bookingsync_hermes"
-
-      event_handler = Hermes::EventHandler.new
-      config.event_handler = event_handler
-
-      event_handler.handle_events do
-        handle DummyEventToTestRpcIntegration, with: DummyEventToTestRpcIntegrationHandler, async: false, rpc: true
-      end
-
-      @worker_thread = Thread.new do
-        Hutch.connect
-
-        worker = Hutch::Worker.new(Hutch.broker, Hutch.consumers, Hutch::Config.setup_procs)
-        worker.run
-      end
-
-      sleep 0.2
     end
 
-    after do
-      @worker_thread.kill
+    around do |example|
+      original_distributed_tracing_database_uri = configuration.distributed_tracing_database_uri
+      original_event_handler = configuration.event_handler
+      original_application_prefix = configuration.application_prefix
+      original_clock = configuration.clock
+
+      Hermes.configure do |config|
+        config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
+        config.event_handler = event_handler
+        config.application_prefix = "bookingsync_hermes"
+        config.clock = clock
+      end
+
+      example.run
+
+      Hermes.configure do |config|
+        config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
+        config.event_handler = original_event_handler
+        config.application_prefix = original_application_prefix
+        config.clock = original_clock
+      end
     end
+
 
     context "when client receives a response from the server" do
+      let(:trace_1) { Hermes::DistributedTrace.order(:id).first }
+      let(:trace_2) { Hermes::DistributedTrace.order(:id).second }
+      let(:trace_3) { Hermes::DistributedTrace.order(:id).third }
+
       it "returns a parsed response from server" do
         response = call
 
@@ -105,6 +92,26 @@ RSpec.describe "RPC call with Hutch" do
         expect(instrumenter).to have_received(:instrument).with("Hermes.RpcClient.broker_connect")
         expect(instrumenter).to have_received(:instrument).with("Hermes.RpcClient.call")
         expect(instrumenter).to have_received(:instrument).with("Hermes.RpcClient.close_connection")
+      end
+
+      it "creates traces: client - server - client" do
+        expect {
+          call
+        }.to change { Hermes::DistributedTrace.count }.by(3)
+
+        expect([trace_1.trace, trace_2.trace, trace_3.trace].uniq).to eq [trace_1.trace]
+        expect(trace_1.span).to include "bookingsync_her"
+        expect(trace_1.span).to include trace_1.trace[0..10]
+        expect(trace_2.span).to include "bookingsync_her"
+        expect(trace_2.span).to include trace_1.trace[0..10]
+        expect(trace_3.span).to include "bookingsync_her"
+        expect(trace_3.span).to include trace_1.trace[0..10]
+        expect(trace_1.parent_span).to eq nil
+        expect(trace_2.parent_span).to eq trace_1.span
+        expect(trace_3.parent_span).to eq trace_2.span
+        expect(trace_1.event_class).to eq "DummyEventToTestRpcIntegration"
+        expect(trace_2.event_class).to eq "DummyEventToTestRpcIntegration"
+        expect(trace_3.event_class).to eq "Hermes::RpcClient::ResponseEvent"
       end
     end
 

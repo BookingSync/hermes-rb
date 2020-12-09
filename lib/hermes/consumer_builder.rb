@@ -16,20 +16,24 @@ module Hermes
         define_method :process do |message|
           instrumenter.instrument("Hermes.Consumer.process") do
             body = message.body
+            headers = message.properties[:headers].to_h
 
             registration = config.event_handler.registration_for(event_class)
 
             if registration.async?
-              config.background_processor.public_send(config.enqueue_method, event_class.to_s, body)
-              logger.log_enqueued(event_class, body, config.clock.now)
+              config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
+              logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
-              response = Hermes::EventProcessor.call(event_class.to_s, body)
+              result = Hermes::EventProcessor.call(event_class.to_s, body, headers)
+              event = result.event
+              response = result.response
 
               if registration.rpc?
                 message.delivery_info.channel.default_exchange.publish(
                   response.to_json,
                   routing_key: message.properties.reply_to,
-                  correlation_id: message.properties.correlation_id
+                  correlation_id: message.properties.correlation_id,
+                  headers: event.to_headers
                 )
               end
             end
@@ -39,15 +43,15 @@ module Hermes
         private
 
         def instrumenter
-          config.instrumenter
+          Hermes::DependenciesContainer["instrumenter"]
         end
 
         def logger
-          config.logger
+          Hermes::DependenciesContainer["logger"]
         end
 
         def config
-          Hermes.configuration
+          Hermes::DependenciesContainer["config"]
         end
       end
 
@@ -72,7 +76,7 @@ module Hermes
     end
 
     def config
-      Hermes.configuration
+      Hermes::DependenciesContainer["config"]
     end
   end
 end

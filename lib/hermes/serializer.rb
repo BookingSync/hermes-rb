@@ -2,11 +2,10 @@ require "time"
 
 module Hermes
   class Serializer
-    attr_reader :correlation_uuid_generator, :clock
-    private     :correlation_uuid_generator, :clock
+    attr_reader :clock
+    private     :clock
 
-    def initialize(correlation_uuid_generator:, clock: Hermes.configuration.clock)
-      @correlation_uuid_generator = correlation_uuid_generator
+    def initialize(clock: Hermes::DependenciesContainer["clock"])
       @clock = clock
     end
 
@@ -19,7 +18,6 @@ module Hermes
     def build_meta(version)
       {
         timestamp: clock.now.iso8601,
-        correlation_uuid: correlation_uuid_generator.uuid,
         event_version: version
       }
     end

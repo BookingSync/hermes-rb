@@ -6,7 +6,7 @@ RSpec.describe Hermes::ConsumerBuilder do
 
     let(:builder) { Hermes::ConsumerBuilder.new }
 
-    class EventClassForTestingConsumerBuilder
+    class EventClassForTestingConsumerBuilder < Hermes::BaseEvent
       def self.routing_key
         "routing_key.for_consumer_test"
       end
@@ -15,11 +15,7 @@ RSpec.describe Hermes::ConsumerBuilder do
         "EventClassForTestingConsumerBuilder"
       end
 
-      attr_reader :payload
-
-      def initialize(payload)
-        @payload = payload
-      end
+      attribute :bookingsync, Types::Nominal::String
     end
     let(:configuration) { Hermes.configuration }
     let(:background_processor) do
@@ -30,8 +26,8 @@ RSpec.describe Hermes::ConsumerBuilder do
           @store = []
         end
 
-        def call(event, payload)
-          store << [event, payload]
+        def call(event, body, headers)
+          store << [event, body, headers]
         end
       end.new
     end
@@ -69,7 +65,11 @@ RSpec.describe Hermes::ConsumerBuilder do
         end
 
         def properties
-          OpenStruct.new(reply_to: "bookingsync_queue", correlation_id: "bookingsync_123")
+          OpenStruct.new(
+            reply_to: "bookingsync_queue",
+            correlation_id: "bookingsync_123",
+            headers: { header: "value" }
+          )
         end
 
         def delivery_info
@@ -87,8 +87,13 @@ RSpec.describe Hermes::ConsumerBuilder do
           @messages = []
         end
 
-        def publish(response, routing_key:, correlation_id:)
-          @messages << OpenStruct.new(response: response, routing_key: routing_key, correlation_id: correlation_id)
+        def publish(response, routing_key:, correlation_id:, headers:)
+          @messages << OpenStruct.new(
+            response: response,
+            routing_key: routing_key,
+            correlation_id: correlation_id,
+            headers: headers
+          )
         end
       end.new
     end
@@ -100,6 +105,7 @@ RSpec.describe Hermes::ConsumerBuilder do
       original_event_handler = configuration.event_handler
       original_logger = Hutch::Logging.logger
       original_clock = configuration.clock
+      original_distributed_tracing_database_uri = configuration.distributed_tracing_database_uri
 
       Hermes.configure do |config|
         config.application_prefix = "app_prefix"
@@ -107,6 +113,7 @@ RSpec.describe Hermes::ConsumerBuilder do
         config.enqueue_method = :call
         config.event_handler = event_handler
         config.clock = dummy_clock
+        config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
       end
       Hutch::Logging.logger = dummy_logger
 
@@ -118,6 +125,7 @@ RSpec.describe Hermes::ConsumerBuilder do
         config.enqueue_method = original_enqueue_method
         config.event_handler = original_event_handler
         config.clock = original_clock
+        config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
       end
       Hutch::Logging.logger = original_logger
     end
@@ -130,26 +138,35 @@ RSpec.describe Hermes::ConsumerBuilder do
     end
 
     describe "processing" do
+      subject(:process) { consumer.new.process(message) }
+
+      let(:consumer) { build }
+
       context "when consumer is async (default setting)" do
         before do
           event_handler.handle(EventClassForTestingConsumerBuilder, with: double)
         end
 
         it "builds a Hutch consumer class that delegates event handling to a background processor and performs logging" do
-          consumer = build
-          consumer.new.process(message)
+          process
 
           expect(background_processor.store).to eq [
-            ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }]
+            ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }, { header: "value" }]
           ]
-          expect(dummy_logger.log).to eq "[Hutch] enqueued: EventClassForTestingConsumerBuilder with {\"bookingsync\"=>true} at 2020-01-01 12:00:00"
+          expect(dummy_logger.log).to eq "[Hutch] enqueued: EventClassForTestingConsumerBuilder, headers: {:header=>\"value\"}, body: {\"bookingsync\"=>true} at 2020-01-01 12:00:00"
+
         end
 
         it "is instrumented" do
           expect(configuration.instrumenter).to receive(:instrument).with("Hermes.Consumer.process")
 
-          consumer = build
-          consumer.new.process(message)
+          process
+        end
+
+        it "does not create any traces (because the event is enqueued for processing, not being processed)" do
+          expect {
+            process
+          }.not_to change { Hermes::DistributedTrace.count }
         end
       end
 
@@ -173,20 +190,26 @@ RSpec.describe Hermes::ConsumerBuilder do
           end
 
           it "builds a Hutch consumer class that directly calls the event handler and does not handle RPC" do
-            consumer = build
             expect {
-              consumer.new.process(message)
+              process
             }.not_to change { fake_exchange.messages.count }
 
             expect(handler.event).to be_instance_of(EventClassForTestingConsumerBuilder)
-            expect(handler.event.payload).to eq(bookingsync: true)
+            expect(handler.event.bookingsync).to eq true
+            expect(handler.event.origin_body).to eq("bookingsync" => true)
+            expect(handler.event.origin_headers).to eq(header: "value")
           end
 
           it "is instrumented" do
             expect(configuration.instrumenter).to receive(:instrument).with("Hermes.Consumer.process")
 
-            consumer = build
-            consumer.new.process(message)
+            process
+          end
+
+          it "creates trace" do
+            expect {
+              process
+            }.to change { Hermes::DistributedTrace.count }.by(1)
           end
         end
 
@@ -197,23 +220,33 @@ RSpec.describe Hermes::ConsumerBuilder do
 
           it "builds a Hutch consumer class that directly calls the event handler and replies back
           handling RPC call" do
-            consumer = build
             expect {
-              consumer.new.process(message)
+              process
             }.to change { fake_exchange.messages.count }.by(1)
 
             expect(handler.event).to be_instance_of(EventClassForTestingConsumerBuilder)
-            expect(handler.event.payload).to eq(bookingsync: true)
+            expect(handler.event.bookingsync).to eq(true)
+            expect(handler.event.origin_body).to eq("bookingsync" => true)
+            expect(handler.event.origin_headers).to eq(header: "value")
             expect(fake_exchange.messages.first.response).to eq("{\"processed\":true}")
             expect(fake_exchange.messages.first.routing_key).to eq("bookingsync_queue")
             expect(fake_exchange.messages.first.correlation_id).to eq("bookingsync_123")
+            expect(fake_exchange.messages.first.headers).to eq Hermes::DistributedTrace.last.event_headers
+            expect(fake_exchange.messages.first.headers.keys).to eq(
+              ["X-B3-TraceId", "X-B3-ParentSpanId", "X-B3-SpanId", "X-B3-Sampled", "service"]
+            )
+          end
+
+          it "creates trace" do
+            expect {
+              process
+            }.to change { Hermes::DistributedTrace.count }.by(1)
           end
 
           it "is instrumented" do
             expect(configuration.instrumenter).to receive(:instrument).with("Hermes.Consumer.process")
 
-            consumer = build
-            consumer.new.process(message)
+            process
           end
         end
       end

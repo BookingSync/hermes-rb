@@ -2,15 +2,27 @@ module Hermes
   class EventProcessor
     extend Forwardable
 
-    def self.call(event_class, payload)
-      new.call(event_class, payload)
+    def self.call(event_class, body, headers)
+      new(
+        distributed_trace_repository: Hermes::DependenciesContainer["distributed_trace_repository"],
+        config: Hermes::DependenciesContainer["config"]
+      ).call(event_class, body, headers)
     end
 
-    def call(event_class, payload)
-      event = Object.const_get(event_class).new(payload.deep_symbolize_keys)
+    attr_reader :distributed_trace_repository, :config
+    private     :distributed_trace_repository, :config
 
+    def initialize(distributed_trace_repository:, config:)
+      @distributed_trace_repository = distributed_trace_repository
+      @config = config
+    end
+
+    def call(event_class, body, headers)
+      event = Object.const_get(event_class).from_body_and_headers(body, headers)
       instrumenter.instrument("Hermes.EventProcessor.#{event_class}") do
-        infer_handler(event_class).call(event)
+        response = infer_handler(event_class).call(event)
+        distributed_trace_repository.create(event)
+        ProcessingResult.new(event, response)
       end
     end
 
@@ -22,8 +34,6 @@ module Hermes
       event_handler.registration_for(event_class).handler
     end
 
-    def config
-      @config ||= Hermes.configuration
-    end
+    ProcessingResult = Struct.new(:event, :response)
   end
 end

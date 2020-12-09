@@ -13,4 +13,5 @@ addons:
       - rabbitmq-server
 services:
   - rabbitmq
+  - postgresql
 before_install: gem install bundler -v 2.1.4

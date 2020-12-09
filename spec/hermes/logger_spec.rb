@@ -17,7 +17,7 @@ RSpec.describe Hermes::Logger do
   end
 
   describe "#log_enqueued" do
-    subject(:log_enqueued) { logger.log_enqueued(event_class, body, timestamp) }
+    subject(:log_enqueued) { logger.log_enqueued(event_class, body, headers, timestamp) }
 
     let(:event_class) { "Event Class" }
     let(:body) do
@@ -31,6 +31,9 @@ RSpec.describe Hermes::Logger do
         currency: "EUR"
       }
     end
+    let(:headers) do
+      { header: "true" }
+    end
     let(:timestamp) { "01-01-2020 12:00:00" }
 
     let(:stripped_body) do
@@ -46,7 +49,7 @@ RSpec.describe Hermes::Logger do
     end
     let(:expected_result) do
       [
-        "[Hutch] enqueued: Event Class with #{stripped_body} at 01-01-2020 12:00:00"
+        "[Hutch] enqueued: Event Class, headers: #{headers}, body: #{stripped_body} at 01-01-2020 12:00:00"
       ]
     end
 
@@ -58,7 +61,7 @@ RSpec.describe Hermes::Logger do
   end
 
   describe "#log_published" do
-    subject(:log_published) { logger.log_published(routing_key, payload, timestamp) }
+    subject(:log_published) { logger.log_published(routing_key, payload, properties, timestamp) }
 
     let(:routing_key) { "hermes.routing.key" }
     let(:payload) do
@@ -72,6 +75,9 @@ RSpec.describe Hermes::Logger do
         currency: "EUR"
       }
     end
+    let(:properties) do
+      { header: "true" }
+    end
     let(:timestamp) { "01-01-2020 12:00:00" }
     let(:stripped_body) do
       {
@@ -86,7 +92,7 @@ RSpec.describe Hermes::Logger do
     end
     let(:expected_result) do
       [
-        "[Hutch] published event to: hermes.routing.key with #{stripped_body} at 01-01-2020 12:00:00"
+        "[Hutch] published event to: hermes.routing.key, properties: #{properties}, body: #{stripped_body} at 01-01-2020 12:00:00"
       ]
     end
 

@@ -33,7 +33,6 @@ Rails.application.config.to_prepare do
     config.enqueue_method = :perform_async
     config.event_handler = event_handler
     config.clock = Time.zone
-    config.correlation_uuid_generator = PaperTrail::CorrelationUuid
     config.instrumenter = Instrumenter
     config.configure_hutch do |hutch|
       hutch.uri = ENV.fetch("HUTCH_URI")
@@ -54,7 +53,8 @@ Note that not all options are required (could be the case if the application is 
 
 1. `adapter` - messages can be either delivered via RabbitMQ or in-memory adapter (useful for testing). Most likely you will want to make it based on the environment, that's why it's advisable to use `Rails.application.config.async_messaging_adapter` and define `async_messaging_adapter` on `config` object in `development.rb`, `test.rb` and `production.rb` files. The recommended setup is to assign `config.async_messaging_adapter = :in_memory` for test ENV and `config.async_messaging_adapter = :hutch` for production and development ENVs.
 2. `application_prefix` - identifier for this application. **ABSOLUTELY NECESSARY** unless you want to have competing queues with different applications (hint: most likely you don't want that).
-3/4. `background_processor` and `enqueue_method`. By design, Hermes is supposed to use Hutch workers to fetch the messages from RabbitMQ and process them in some background jobs framework. `background_processor` refers to the name of the class for the job and `enqueue_method` is the method name that will be called when enqueuing the job. This method must accept two arguments: `event_class` and `payload`. Here is an example for Sdekiq:
+
+3 and 4. `background_processor` and `enqueue_method`. By design, Hermes is supposed to use Hutch workers to fetch the messages from RabbitMQ and process them in some background jobs framework. `background_processor` refers to the name of the class for the job and `enqueue_method` is the method name that will be called when enqueuing the job. This method must accept three arguments: `event_class`, `body` and `headers`. Here is an example for Sidekiq:
 
 ``` rb
 class HermesHandlerJob
@@ -62,61 +62,47 @@ class HermesHandlerJob
 
   sidekiq_options queue: :critical
 
-  def perform(event_class, payload)
-    Hermes::EventProcessor.call(event_class, payload)
+  def perform(event_class, body, headers)
+    Hermes::EventProcessor.call(event_class, body, headers)
   end
 end
 ```
 
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
 5. `event_handler` - an instance of event handler/storage, just use what is shown in the example.
-6. `clock` - a clock object that is time-zone aware, implementing `now` method. Since Hermes is decoupled from Rails and ActiveSupport, it doesn't know about `Time.zone` etc., so you need to inject it yourself (if you use Rails).
-7. `correlation_uuid_generator` - to have an easily trackable saga of the events, it's a good idea to registerer correlation IDs. Even better if it's something that you also use for audit log like PaperTrailVersions. That way, it's easier to think about side effects. Here, the application uses the generator that is shared with PaperTrailVersions. If you don't care about correlation UUIDs, just use `SecureRandom`. The expected interface is `uuid` method that is going to return some uuid and that's it.
+6. `clock` - a clock object that is time-zone aware, implementing `now` method.
+7. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
+8. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
+
+This class inherits from `Dry::Struct`, so getting familiar with [dry-struct gem](https://dry-rb.org/gems/dry-struct/) would be beneficial. Here is an example event:
 
 ``` rb
-class PaperTrail::CorrelationUuid
-  def self.uuid
-    store[:correlation_uuid] ||= SecureRandom.uuid
-  end
-
-  def self.uuid=(uuid)
-    store[:correlation_uuid] = uuid
-  end
-
-  def self.store
-    RequestStore.store[:paper_trail_extensions] ||= {}
-  end
-  private_class_method :store
+class Payment::MarkedAsPaid < Hermes::BaseEvent
+  attribute :payment_id, Types::Strict::Integer
+  attribute :cents, Types::Strict::Integer
+  attribute :currency, Types::Strict::String
 end
 ```
 
-Note that it uses `RequestStore`, which is an external dependency. To reuse this class, you need to install `request_store` and `request_store-sidekiq` gems.
-
-8. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
-9. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events shoyld ideally be subclasses of the following base class:
+To keep things clean, you might want to prefix the namespace with `Events`:
 
 ``` rb
-class Events::BaseEvent < Dry::Struct
-  def self.routing_key
-    to_s.split("::")[1..-1].map(&:underscore).map(&:downcase).join(".")
-  end
-
-  def routing_key
-    self.class.routing_key
-  end
-
-  def version
-    1
-  end
+class Events::Payment::MarkedAsPaid < Hermes::BaseEvent
+  attribute :payment_id, Types::Strict::Integer
+  attribute :cents, Types::Strict::Integer
+  attribute :currency, Types::Strict::String
 end
 ```
 
-That also implies that you need to add `dry-types` and `dry-struct` gems and use their API to define attributes or provide custom `as_json` method for serialization and implement the same interface for initializing objects as `dry-struct` does if you don't want to introduce extra dependencies.
+In both cases, the routing key will be the same (`Events` prefix is dropped) and will resolve to `payment.marked_as_paid`
+
+To avoid unexpected problems, don't use restricted names for attribtes such as `meta`, `routing_key`, `origin_headers`, `origin_body`, `trace_context`, `version`.
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
-10. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later).
-11. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
+9. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later).
+
+10. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
 
 For example:
 
@@ -134,9 +120,15 @@ module Instrumenter
 end
 ```
 
-If you don't care about it, just use `Hermes::NullInstrumenter`.
+If you don't care about it, you can leave it empty.
 
-### RPC
+11. `distributed_tracing_database_uri` - If you want to enable distributed tracing, specify Postgres database URI
+
+12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`.
+
+13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) that has to return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. The default mapper just returns the original hash. You can use it if you want to remove, for example, some sensitive info from the event's body.
+
+## RPC
 
 If you want to handle RPC call, you need to add `rpc: true` flag. Keep in mind that RPC requires a synchronous processing and response, so you also need to set `async: false`. The routing key and correlation ID will be resolved based on the message that is published by the client. The payload that is sent back will be what event handler reutrns, so it might be a good idea to just return a hash so that you can operate on JSON easily.
 
@@ -164,6 +156,52 @@ parsed_response_hash = Hermes::RpcClient.new(rpc_call_timeout: 10).call(event)
 
 If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 
+## Distributed Tracing
+
+If you want to take advantage of distributed tracing, you need to specify `distributed_tracing_database_uri` in the config and in many cases that will be enough, although there are some cases where some extra code will be required to properly use it.
+
+If you don't have any complex sagas, for example, a publisher publishes an event, and some consumers consume it and that's it, then you don't need to do any thing extra as things will be handled out-of-box. In such scenario, at least two `Hermes::DistributedTrace` will be created (one for producer, and the rest for consumers).
+However, if you also need to publish another event from the consumer after consuming the original event, you will need to assign `origin_headers` so that `trace` and `parent span` can be properly propagated. `origin_headers` are the headers coming from the event from the previous service and need to be used for all events in the next service. Here is an example how to do this.
+
+
+``` rb
+do_something_as_the_consumer(original_event) # this happens in the event handler 
+new_event = build_event # this as well, it's just the part of the logic
+new_event.origin_headers = original_event.origin_headers
+publish_event(new_event)
+```
+
+You will also need to create an appropriate database table:
+
+``` rb
+create_table(:hermes_distributed_traces) do |t|
+  t.string "trace", null: false
+  t.string "span", null: false
+  t.string "parent_span"
+  t.string "service", null: false
+  t.text "event_class", null: false
+  t.text "routing_key", null: false
+  t.jsonb "event_body", null: false, default: []
+  t.jsonb "event_headers", null: false, default: []
+  t.datetime "created_at", precision: 6, null: false
+  t.datetime "updated_at", precision: 6, null: false
+
+  t.index ["created_at"], name: "index_hermes_distributed_traces_on_created_at", using: :brin
+  t.index ["trace"], name: "index_hermes_distributed_traces_on_trace"
+  t.index ["span"], name: "index_hermes_distributed_traces_on_span"
+  t.index ["service"], name: "index_hermes_distributed_traces_on_service"
+  t.index ["event_class"], name: "index_hermes_distributed_traces_on_event_class"
+  t.index ["routing_key"], name: "index_hermes_distributed_traces_on_routing_key"
+end 
+```
+
+Some important attributes to understand which will be useful during potential debugging:
+
+1. `trace` - ID of the trace - all events from the same saga will have the same value (and that's why it's important to properly deal with `origin_headers`).
+2. `span` - ID of the operation.
+3. `parent span` - span value of the previous operation from the previous service.
+4. `service` - name of the service where the given event occured, based on `application_prefix`,
+ 
 ## Testing
 
 ### RSpec useful stuff
@@ -278,7 +316,7 @@ RSpec.describe HermesHandlerJob do
   it { is_expected.to be_processed_in :critical }
 
   describe "#perform" do
-    subject(:perform) { described_class.new.perform(EventClassForTestingHermesHandlerJob.to_s, payload) }
+    subject(:perform) { described_class.new.perform(EventClassForTestingHermesHandlerJob.to_s, payload, headers) }
 
     let(:configuration) { Hermes.configuration }
     let(:event_handler) { Hermes::EventHandler.new }
@@ -287,7 +325,10 @@ RSpec.describe HermesHandlerJob do
         "bookingsync" => "hermes"
       }
     end
-    class EventClassForTestingHermesHandlerJob < Events::BaseEvent
+    let(:headers) do
+      {}
+    end
+    class EventClassForTestingHermesHandlerJob < Hermes::BaseEvent
       attribute :bookingsync, Types::Strict::String
     end
     class HandlerForEventClassForTestingHermesHandlerJob
