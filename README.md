@@ -73,6 +73,7 @@ end
 ```
 
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
+
 5. `event_handler` - an instance of event handler/storage, just use what is shown in the example.
 6. `clock` - a clock object that is time-zone aware, implementing `now` method.
 7. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
