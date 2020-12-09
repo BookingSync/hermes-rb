@@ -30,10 +30,6 @@ module Hermes
       1
     end
 
-    def as_json
-      to_h.stringify_keys
-    end
-
     def to_headers
       Hermes::B3PropagationModelHeaders
         .new(trace_context)
