@@ -37,6 +37,7 @@ Rails.application.config.to_prepare do
     config.configure_hutch do |hutch|
       hutch.uri = ENV.fetch("HUTCH_URI")
     end
+    config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI")
   end
 
   event_handler.handle_events do
@@ -44,6 +45,9 @@ Rails.application.config.to_prepare do
 
     handle Events::Example::SyncCallHappened, with: Example::SyncCallHappenedHandler, async: false
   end
+
+  # if you care about distributed tracing
+  Hermes::DistributedTrace.establish_connection(Hermes.configuration.distributed_tracing_database_uri)
 end
 
 Hutch::Logging.logger = Rails.logger if !Rails.env.test? && !Rails.env.development?
@@ -156,7 +160,7 @@ parsed_response_hash = Hermes::RpcClient.new(rpc_call_timeout: 10).call(event)
 
 If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 
-## Distributed Tracing
+## Distributed Tracing (Beta feature, the interface might change in the future)
 
 If you want to take advantage of distributed tracing, you need to specify `distributed_tracing_database_uri` in the config and in many cases that will be enough, although there are some cases where some extra code will be required to properly use it.
 
@@ -202,6 +206,8 @@ Some important attributes to understand which will be useful during potential de
 3. `parent span` - span value of the previous operation from the previous service.
 4. `service` - name of the service where the given event occured, based on `application_prefix`,
  
+It is highly recommended to use a shared database for storing traces. It's not ideal, but the benefits of storing traces in a single DB shared by the applications outweigh the disadvantages in many cases.  
+
 ## Testing
 
 ### RSpec useful stuff
