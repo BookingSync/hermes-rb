@@ -53,6 +53,10 @@ RSpec.configure do |config|
     @worker_thread.kill
   end
 
+  config.after(:example) do
+    Hermes.origin_headers = {}
+  end
+
   database_name = "hermes-rb-test"
   ENV["DISTRIBUTED_TRACING_DATABASE_URI"] ||= "postgresql://localhost/#{database_name}"
 
@@ -97,4 +101,6 @@ RSpec.configure do |config|
   module Types
     include Dry.Types()
   end
+
+  RSpec::Matchers.define_negated_matcher :avoid_changing, :change
 end

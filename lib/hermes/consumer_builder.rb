@@ -24,7 +24,7 @@ module Hermes
               config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
               logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
-              result = Hermes::EventProcessor.call(event_class.to_s, body, headers)
+              result = event_processor.call(event_class.to_s, body, headers)
               event = result.event
               response = result.response
 
@@ -52,6 +52,10 @@ module Hermes
 
         def config
           Hermes::DependenciesContainer["config"]
+        end
+
+        def event_processor
+          Hermes::DependenciesContainer["event_processor"]
         end
       end
 

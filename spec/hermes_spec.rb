@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe:Hermes do
+RSpec.describe Hermes do
   it "has a version number" do
     expect(Hermes::Rb::VERSION).not_to be_nil
   end
@@ -52,5 +52,17 @@ RSpec.describe:Hermes do
       expect(configuration.adapter).to eq adapter
       expect(configuration.hutch.uri).to eq hutch_uri
     end
+  end
+
+  describe "origin_headers" do
+    subject(:assign_origin_headers) { described_class.origin_headers = headers }
+
+    let(:headers) do
+      {
+        header: "value"
+      }
+    end
+
+    it { is_expected_block.to change { described_class.origin_headers }.from({}).to(headers) }
   end
 end

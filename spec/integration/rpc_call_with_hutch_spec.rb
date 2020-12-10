@@ -106,12 +106,87 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_work
         expect(trace_2.span).to include trace_1.trace[0..10]
         expect(trace_3.span).to include "bookingsync_her"
         expect(trace_3.span).to include trace_1.trace[0..10]
-        expect(trace_1.parent_span).to eq nil
-        expect(trace_2.parent_span).to eq trace_1.span
-        expect(trace_3.parent_span).to eq trace_2.span
+        expect(
+          [trace_1.parent_span, trace_2.parent_span, trace_3.parent_span]
+        ).to match_array [nil, trace_1.span, trace_2.span]
         expect(trace_1.event_class).to eq "DummyEventToTestRpcIntegration"
         expect(trace_2.event_class).to eq "DummyEventToTestRpcIntegration"
         expect(trace_3.event_class).to eq "Hermes::RpcClient::ResponseEvent"
+      end
+
+      describe "origin headers" do
+        context "when origin headers are assigned to the event and they are assigned to Hermes.origin_headers" do
+          let(:hermes_origin_headers) do
+            {
+              "X-B3-TraceId" => hermes_trace_id,
+              "X-B3-ParentSpanId" => "zxc",
+              "X-B3-SpanId" => "abc",
+              "X-B3-Sampled" => ""
+            }
+          end
+          let(:hermes_trace_id) { "123" }
+          let(:event_origin_headers) do
+            {
+              "X-B3-TraceId" => event_trace_id,
+              "X-B3-ParentSpanId" => "123098",
+              "X-B3-SpanId" => "123abc",
+              "X-B3-Sampled" => ""
+            }
+          end
+          let(:event_trace_id) { "qwe" }
+
+          before do
+            event.origin_headers = event_origin_headers
+            Hermes.origin_headers = hermes_origin_headers
+          end
+
+          it "uses event's headers to serialize headers for the first event and it does not modify origin_headers on the event's level" do
+            expect {
+              call
+            }.to change { Hermes::DistributedTrace.count }.by(3)
+            .and avoid_changing { event.origin_headers }
+
+            expect(Hermes::DistributedTrace.pluck(:trace).uniq).to eq [event_trace_id]
+            expect(Hermes::DistributedTrace.where(parent_span: nil)).to be_empty
+          end
+        end
+
+        context "when origin headers are not assigned to the event and they are assigned to Hermes.origin_headers" do
+          let(:hermes_origin_headers) do
+            {
+              "X-B3-TraceId" => trace_id,
+              "X-B3-ParentSpanId" => "zxc",
+              "X-B3-SpanId" => "abc",
+              "X-B3-Sampled" => ""
+            }
+          end
+          let(:trace_id) { "123" }
+
+          before do
+            Hermes.origin_headers = hermes_origin_headers
+          end
+
+          it "uses these headers to serialize headers for the first event and it modifies origin_headers on the event's level" do
+            expect {
+              call
+            }.to change { Hermes::DistributedTrace.count }.by(3)
+            .and change { event.origin_headers }.from(nil).to(hermes_origin_headers)
+
+            expect(Hermes::DistributedTrace.pluck(:trace).uniq).to eq [trace_id]
+            expect(Hermes::DistributedTrace.where(parent_span: nil)).to be_empty
+          end
+        end
+
+        context "when origin headers are not assigned to the event and they are not assigned to Hermes.origin_headers" do
+          it "just works and it modifies origin_headers on the event's level" do
+            expect {
+              call
+            }.to change { Hermes::DistributedTrace.count }.by(3)
+            .and change { event.origin_headers }.from(nil).to({})
+
+            expect(Hermes::DistributedTrace.where(parent_span: nil).count).to eq 1
+          end
+        end
       end
     end
 

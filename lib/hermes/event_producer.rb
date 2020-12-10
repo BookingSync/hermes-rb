@@ -39,6 +39,8 @@ module Hermes
 
     def publish_event(event, properties = {}, options = {})
       instrumenter.instrument("Hermes.EventProducer.publish") do
+        event.origin_headers ||= Hermes.origin_headers
+
         publisher.publish(
           event.routing_key,
           serialize(event.as_json, event.version),

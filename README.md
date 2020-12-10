@@ -165,16 +165,24 @@ If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 
 If you want to take advantage of distributed tracing, you need to specify `distributed_tracing_database_uri` in the config and in many cases that will be enough, although there are some cases where some extra code will be required to properly use it.
 
-If you don't have any complex sagas, for example, a publisher publishes an event, and some consumers consume it and that's it, then you don't need to do any thing extra as things will be handled out-of-box. In such scenario, at least two `Hermes::DistributedTrace` will be created (one for producer, and the rest for consumers).
-However, if you also need to publish another event from the consumer after consuming the original event, you will need to assign `origin_headers` so that `trace` and `parent span` can be properly propagated. `origin_headers` are the headers coming from the event from the previous service and need to be used for all events in the next service. Here is an example how to do this.
+If you have a "standard" flow, which means producing events and then consuming them in the jobs specified by `background_processor` and publishing other events from the same class, then you don't need to do anything extra as things will be handled out-of-box. In such scenario, at least two `Hermes::DistributedTrace` will be created (one for producer, and the rest for consumers and then potential other traces if the consumer also published some events).
 
+However, if you enqueue some job inside the job specified by `background_processor`, you will need to do something extra:
+
+1. You need to pass `origin_headers` as an argument to the job to have headers available. You can extract them inside the handler from the event by calling `event.origin_headers`
+2. When processing the job, you will need to assign these headers to `Hermes`: 
 
 ``` rb
-do_something_as_the_consumer(original_event) # this happens in the event handler 
-new_event = build_event # this as well, it's just the part of the logic
-new_event.origin_headers = original_event.origin_headers
-publish_event(new_event)
+Hermes.origin_headers = origin_headers
 ```
+
+These `origin_headers` will be stored in `RequestStore.store` (it uses [request_store](https://github.com/steveklabnik/request_store)).
+
+Traces are also stored for RPC calls. For a single RPC, there will be traces:
+1. Client (the actual RPC call)
+2. Server (processing the request)
+3. Client (processing the response) - that one uses a special internal event to keep the consistency: `ResponseEvent`, which stores `response_body` as a hash.
+
 
 You will also need to create an appropriate database table:
 

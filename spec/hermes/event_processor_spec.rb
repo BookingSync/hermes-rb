@@ -84,5 +84,11 @@ RSpec.describe Hermes::EventProcessor, :with_application_prefix do
 
       expect(Hermes::DistributedTrace.last.event_class).to eq "EventClassForTestingAsyncMessagingEventProcessor"
     end
+
+    it "assigns origin headers to Hermes" do
+      expect {
+        call
+      }.to change { Hermes.origin_headers }.from({}).to(headers)
+    end
   end
 end
