@@ -19,6 +19,7 @@ require "dry/struct"
 require "active_support"
 require "active_support/core_ext/string"
 require "active_record"
+require "request_store"
 
 module Hermes
   def self.configuration
@@ -27,6 +28,17 @@ module Hermes
 
   def self.configure
     yield configuration
+  end
+
+  ORIGIN_HEADERS_KEY = :__hermes__origin_headers
+  private_constant :ORIGIN_HEADERS_KEY
+
+  def self.origin_headers
+    DependenciesContainer["global_store"][ORIGIN_HEADERS_KEY].to_h
+  end
+
+  def self.origin_headers=(headers)
+    DependenciesContainer["global_store"][ORIGIN_HEADERS_KEY] = headers.to_h
   end
 end
 

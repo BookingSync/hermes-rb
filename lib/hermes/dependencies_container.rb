@@ -47,5 +47,17 @@ module Hermes
     def self.distributes_tracing_mapper
       config.distributes_tracing_mapper
     end
+
+    def self.event_producer
+      Hermes::EventProducer
+    end
+
+    def self.event_processor
+      Hermes::EventProcessor
+    end
+
+    def self.global_store
+      RequestStore.store
+    end
   end
 end

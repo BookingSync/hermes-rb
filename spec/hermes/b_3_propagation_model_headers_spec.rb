@@ -5,10 +5,10 @@ RSpec.describe Hermes::B3PropagationModelHeaders do
     let(:trace_context) { double(:trace_context, trace: "123", span: "abc", parent_span: "zxc") }
     let(:expected_result) do
       {
-          "X-B3-TraceId" => "123",
-          "X-B3-ParentSpanId" => "zxc",
-          "X-B3-SpanId" => "abc",
-          "X-B3-Sampled" => ""
+        "X-B3-TraceId" => "123",
+        "X-B3-ParentSpanId" => "zxc",
+        "X-B3-SpanId" => "abc",
+        "X-B3-Sampled" => ""
       }
     end
 

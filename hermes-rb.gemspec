@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "hutch", "~> 1.0"
   spec.add_dependency "activesupport", ">= 5"
   spec.add_dependency "activerecord", ">= 5"
+  spec.add_dependency "request_store", "~> 1"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"

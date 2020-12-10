@@ -123,6 +123,82 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
           }
         ]
       end
+
+      describe "origin headers" do
+        let(:published_trace_id) { publisher.store.first[:properties][:headers]["X-B3-TraceId"] }
+        let(:published_parent_span) { publisher.store.first[:properties][:headers]["X-B3-ParentSpanId"] }
+
+        context "when origin headers are assigned to the event and they are assigned to Hermes.origin_headers" do
+          let(:hermes_origin_headers) do
+            {
+              "X-B3-TraceId" => hermes_trace_id,
+              "X-B3-ParentSpanId" => "zxc",
+              "X-B3-SpanId" => "abc",
+              "X-B3-Sampled" => ""
+            }
+          end
+          let(:hermes_trace_id) { "123" }
+          let(:event_origin_headers) do
+            {
+              "X-B3-TraceId" => event_trace_id,
+              "X-B3-ParentSpanId" => "123098",
+              "X-B3-SpanId" => "123abc",
+              "X-B3-Sampled" => ""
+            }
+          end
+          let(:event_trace_id) { "qwe" }
+
+          before do
+            event.origin_headers = event_origin_headers
+            Hermes.origin_headers = hermes_origin_headers
+          end
+
+          it "uses event's headers to serialize headers for the first event and it does not modify origin_headers on the event's level" do
+            expect {
+              publish
+            }.not_to change { event.origin_headers }
+
+            expect(published_trace_id).to eq event_trace_id
+            expect(published_parent_span).to be_present
+          end
+        end
+
+        context "when origin headers are not assigned to the event and they are assigned to Hermes.origin_headers" do
+          let(:hermes_origin_headers) do
+            {
+              "X-B3-TraceId" => trace_id,
+              "X-B3-ParentSpanId" => "zxc",
+              "X-B3-SpanId" => "abc",
+              "X-B3-Sampled" => ""
+            }
+          end
+          let(:trace_id) { "123" }
+
+          before do
+            Hermes.origin_headers = hermes_origin_headers
+          end
+
+          it "uses these headers to serialize headers for the first event and it modifies origin_headers on the event's level" do
+            expect {
+              publish
+            }.to change { event.origin_headers }.from(nil).to(hermes_origin_headers)
+
+            expect(published_trace_id).to eq trace_id
+            expect(published_parent_span).to be_present
+          end
+        end
+
+        context "when origin headers are not assigned to the event and they are not assigned to Hermes.origin_headers" do
+          it "just works and it modifies origin_headers on the event's level" do
+            expect {
+              publish
+            }.to change { event.origin_headers }.from(nil).to({})
+
+            expect(published_trace_id).to be_present
+            expect(published_parent_span).to eq nil
+          end
+        end
+      end
     end
   end
 

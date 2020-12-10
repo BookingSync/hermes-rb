@@ -38,6 +38,7 @@ module Hermes
       begin
         instrumenter.instrument("Hermes.RpcClient.call") do
           channel.basic_consume_with(consumer)
+          event.origin_headers ||= Hermes.origin_headers
 
           lock.synchronize do
             options = {
