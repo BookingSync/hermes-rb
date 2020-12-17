@@ -388,7 +388,7 @@ end
 
 ## Deployment and managing consumerzs
 
-Hermes is just an extra later on top of [hutch](https://github.com/gocardless/hutch), refer to Hutch's docs for more info about dealing with the workers and deployment.
+Hermes is just an extra layer on top of [hutch](https://github.com/gocardless/hutch), refer to Hutch's docs for more info about dealing with the workers and deployment.
 
 ## CircleCI config for installing RabbitMQ
 
