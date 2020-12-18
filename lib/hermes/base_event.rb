@@ -1,5 +1,3 @@
-require 'dry-struct'
-
 module Hermes
   class BaseEvent < Dry::Struct
     EVENTS_NAMESPACE = "Events".freeze
