@@ -37,7 +37,7 @@ Rails.application.config.to_prepare do
     config.configure_hutch do |hutch|
       hutch.uri = ENV.fetch("HUTCH_URI")
     end
-    config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI")
+    config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI", nil)
   end
 
   event_handler.handle_events do
@@ -47,7 +47,9 @@ Rails.application.config.to_prepare do
   end
 
   # if you care about distributed tracing
-  Hermes::DistributedTrace.establish_connection(Hermes.configuration.distributed_tracing_database_uri)
+  if Hermes.configuration.store_distributed_traces?
+    Hermes::DistributedTrace.establish_connection(Hermes.configuration.distributed_tracing_database_uri)
+  end
 end
 
 Hutch::Logging.logger = Rails.logger if !Rails.env.test? && !Rails.env.development?
@@ -170,7 +172,7 @@ If you have a "standard" flow, which means producing events and then consuming t
 However, if you enqueue some job inside the job specified by `background_processor`, you will need to do something extra:
 
 1. You need to pass `origin_headers` as an argument to the job to have headers available. You can extract them inside the handler from the event by calling `event.origin_headers`
-2. When processing the job, you will need to assign these headers to `Hermes`: 
+2. When processing the job, you will need to assign these headers to `Hermes`:
 
 ``` rb
 Hermes.origin_headers = origin_headers
@@ -205,7 +207,7 @@ create_table(:hermes_distributed_traces) do |t|
   t.index ["service"], name: "index_hermes_distributed_traces_on_service"
   t.index ["event_class"], name: "index_hermes_distributed_traces_on_event_class"
   t.index ["routing_key"], name: "index_hermes_distributed_traces_on_routing_key"
-end 
+end
 ```
 
 Some important attributes to understand which will be useful during potential debugging:
@@ -214,8 +216,8 @@ Some important attributes to understand which will be useful during potential de
 2. `span` - ID of the operation.
 3. `parent span` - span value of the previous operation from the previous service.
 4. `service` - name of the service where the given event occured, based on `application_prefix`,
- 
-It is highly recommended to use a shared database for storing traces. It's not ideal, but the benefits of storing traces in a single DB shared by the applications outweigh the disadvantages in many cases.  
+
+It is highly recommended to use a shared database for storing traces. It's not ideal, but the benefits of storing traces in a single DB shared by the applications outweigh the disadvantages in many cases.
 
 ## Testing
 
