@@ -40,7 +40,8 @@ module Hermes
       Hermes::DistributedTraceRepository.new(
         config: config,
         distributed_trace_database: Hermes::DistributedTrace,
-        distributes_tracing_mapper: distributes_tracing_mapper
+        distributes_tracing_mapper: distributes_tracing_mapper,
+        database_error_handler: database_error_handler
       )
     end
 
@@ -58,6 +59,10 @@ module Hermes
 
     def self.global_store
       RequestStore.store
+    end
+
+    def self.database_error_handler
+      config.database_error_handler
     end
   end
 end

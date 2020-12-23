@@ -14,7 +14,8 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
       described_class.new(
         config: config,
         distributed_trace_database: distributed_trace_database,
-        distributes_tracing_mapper: distributes_tracing_mapper
+        distributes_tracing_mapper: distributes_tracing_mapper,
+        database_error_handler: database_error_handler
       )
     end
     let(:config) do
@@ -38,6 +39,18 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
       Class.new do
         def call(attributes)
           attributes.merge("extra_attribute" => "from_mapper")
+        end
+      end.new
+    end
+    let(:database_error_handler) do
+      Hermes::DatabaseErrorHandler.new(error_notification_service: error_notification_service)
+    end
+    let(:error_notification_service) do
+      Class.new do
+        attr_reader :error
+
+        def capture_exception(error)
+          @error = error
         end
       end.new
     end
@@ -72,7 +85,21 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
         allow(SecureRandom).to receive(:hex).with(32) { "c1b84b37d8a8aa78dc04536c321c1af05a57a57ff4b45e6598da22acc345fcb6" }
       end
 
-      it { is_expected_block.to change { distributed_trace_database.attributes }.from(nil).to(expected_attributes) }
+      context "on success" do
+        it { is_expected_block.to change { distributed_trace_database.attributes }.from(nil).to(expected_attributes) }
+      end
+
+      context "on error" do
+        before do
+          allow(distributed_trace_database).to receive(:create!) { raise error }
+        end
+
+        let(:error) { StandardError.new("something went wrong") }
+
+        it { is_expected_block.not_to change { distributed_trace_database.attributes } }
+        it { is_expected_block.not_to raise_error }
+        it { is_expected_block.to change { error_notification_service.error }.from(nil).to(error) }
+      end
     end
 
     context "when it should not store distributed traces" do

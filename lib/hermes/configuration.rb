@@ -3,7 +3,7 @@ module Hermes
     attr_accessor :adapter, :clock, :hutch, :application_prefix, :logger,
       :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
       :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table,
-      :distributes_tracing_mapper
+      :distributes_tracing_mapper, :database_error_handler, :error_notification_service
 
     def configure_hutch
       yield hutch
@@ -44,6 +44,14 @@ module Hermes
 
     def distributes_tracing_mapper
       @distributes_tracing_mapper || ->(attributes) { attributes }
+    end
+
+    def error_notification_service
+      @error_notification_service || Hermes::NullErrorNotificationService
+    end
+
+    def database_error_handler
+      @database_error_handler || Hermes::DatabaseErrorHandler.new(error_notification_service: error_notification_service)
     end
 
     class HutchConfig

@@ -1,12 +1,13 @@
 module Hermes
   class DistributedTraceRepository
-    attr_reader :config, :distributed_trace_database, :distributes_tracing_mapper
-    private     :config, :distributed_trace_database, :distributes_tracing_mapper
+    attr_reader :config, :distributed_trace_database, :distributes_tracing_mapper, :database_error_handler
+    private     :config, :distributed_trace_database, :distributes_tracing_mapper, :database_error_handler
 
-    def initialize(config:, distributed_trace_database:, distributes_tracing_mapper:)
+    def initialize(config:, distributed_trace_database:, distributes_tracing_mapper:, database_error_handler:)
       @config = config
       @distributed_trace_database = distributed_trace_database
       @distributes_tracing_mapper = distributes_tracing_mapper
+      @database_error_handler = database_error_handler
     end
 
     def create(event)
@@ -23,7 +24,11 @@ module Hermes
           event_body: event.as_json,
           event_headers: event.to_headers
         )
-        distributed_trace_database.create!(attributes)
+        begin
+          distributed_trace_database.create!(attributes)
+        rescue StandardError => error
+          database_error_handler.call(error)
+        end
       end
     end
   end
