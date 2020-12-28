@@ -36,6 +36,15 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
     let(:trace_1) { Hermes::DistributedTrace.order(:created_at).first }
     let(:trace_2) { Hermes::DistributedTrace.order(:created_at).second }
     let(:first_trace) { Hermes::DistributedTrace.find_by!(parent_span: nil) }
+    let(:error_notification_service) do
+      Class.new do
+        attr_reader :error
+
+        def capture_exception(error)
+          @error = error
+        end
+      end.new
+    end
     let(:configuration) { Hermes.configuration }
 
     around do |example|
@@ -45,11 +54,13 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       original_distributed_tracing_database_uri = configuration.distributed_tracing_database_uri
       original_event_handler = configuration.event_handler
       original_clock = configuration.clock
+      original_error_notification_service = configuration.error_notification_service
 
       Hermes.configure do |config|
         config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
         config.event_handler = event_handler
         config.clock = clock
+        config.error_notification_service = error_notification_service
       end
 
       VCR.use_cassette("hutch.integration_spec_with_event_producer") do
@@ -60,6 +71,7 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
         config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
         config.event_handler = original_event_handler
         config.clock = original_clock
+        config.error_notification_service = original_error_notification_service
       end
     end
 
@@ -89,6 +101,21 @@ RSpec.describe "Event Producer Integration With Hutch Publisher", :with_applicat
       expect([trace_1.parent_span, trace_2.parent_span]).to match_array [nil, first_trace.span]
       expect(trace_1.event_class).to eq "EventForTestingIntegrationWithHutchPublisher"
       expect(trace_2.event_class).to eq "EventForTestingIntegrationWithHutchPublisher"
+    end
+
+    context "when there is an error when storing traces" do
+      before do
+        allow(Hermes::DistributedTrace).to receive(:create!) { raise "whoops!" }
+      end
+
+      it "does not blow up, it uses error handler and just keeps going" do
+        publish
+
+        do_whatever_it_takes_to_avoid_flaky_mess
+
+        expect(error_notification_service.error).to be_instance_of(RuntimeError)
+        expect(File.read(file_path)).to eq "bookingsync + rabbit = :hearts:"
+      end
     end
   end
 end
