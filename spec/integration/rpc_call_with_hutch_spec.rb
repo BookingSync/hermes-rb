@@ -35,6 +35,15 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_work
         end
       end
     end
+    let(:error_notification_service) do
+      Class.new do
+        attr_reader :error
+
+        def capture_exception(error)
+          @error = error
+        end
+      end.new
+    end
 
     before do
       allow(instrumenter).to receive(:instrument).and_call_original
@@ -48,12 +57,14 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_work
       original_event_handler = configuration.event_handler
       original_application_prefix = configuration.application_prefix
       original_clock = configuration.clock
+      original_error_notification_service = configuration.error_notification_service
 
       Hermes.configure do |config|
         config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
         config.event_handler = event_handler
         config.application_prefix = "bookingsync_hermes"
         config.clock = clock
+        config.error_notification_service = error_notification_service
       end
 
       example.run
@@ -63,6 +74,7 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_work
         config.event_handler = original_event_handler
         config.application_prefix = original_application_prefix
         config.clock = original_clock
+        config.error_notification_service = original_error_notification_service
       end
     end
 
@@ -230,6 +242,19 @@ RSpec.describe "RPC call with Hutch", :with_application_prefix, :with_hutch_work
           call
         rescue StandardError
         end
+      end
+    end
+
+    context "when there is an error when storing traces" do
+      before do
+        allow(Hermes::DistributedTrace).to receive(:create!) { raise "whoops!" }
+      end
+
+      it "does not blow up, it uses error handler and just keeps going" do
+        response = call
+
+        expect(error_notification_service.error).to be_instance_of(RuntimeError)
+        expect(response).to eq("message" => "bookingsync + rabbit = :hearts:")
       end
     end
   end

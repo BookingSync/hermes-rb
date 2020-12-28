@@ -38,6 +38,7 @@ Rails.application.config.to_prepare do
       hutch.uri = ENV.fetch("HUTCH_URI")
     end
     config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI", nil)
+    config.error_notification_service = Raven
   end
 
   event_handler.handle_events do
@@ -107,7 +108,7 @@ To avoid unexpected problems, don't use restricted names for attribtes such as `
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
-9. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later).
+9. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later). Optional.
 
 10. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
 
@@ -129,11 +130,15 @@ end
 
 If you don't care about it, you can leave it empty.
 
-11. `distributed_tracing_database_uri` - If you want to enable distributed tracing, specify Postgres database URI
+11. `distributed_tracing_database_uri` - If you want to enable distributed tracing, specify Postgres database URI. Optional.
 
-12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`.
+12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`. Optional.
 
-13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) that has to return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. The default mapper just returns the original hash. You can use it if you want to remove, for example, some sensitive info from the event's body.
+13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) that has to return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. The default mapper just returns the original hash. You can use it if you want to remove, for example, some sensitive info from the event's body. Optional.
+
+14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Used when storing distributed traces, its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
+
+15. `database_error_handler` - `an object responding to `call` method taking one argument (error). Used when storing distributed traces. By default it uses `Hermes::DatabaseErrorHandler` which depends on `error_notification_service`, so in most cases, you will probably want to just configure `error_notification_service`. Optional.
 
 ## RPC
 
@@ -163,7 +168,7 @@ parsed_response_hash = Hermes::RpcClient.new(rpc_call_timeout: 10).call(event)
 
 If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 
-## Distributed Tracing (Beta feature, the interface might change in the future)
+## Distributed Tracing (experimental feature, the interface might change in the future)
 
 If you want to take advantage of distributed tracing, you need to specify `distributed_tracing_database_uri` in the config and in many cases that will be enough, although there are some cases where some extra code will be required to properly use it.
 
@@ -218,6 +223,8 @@ Some important attributes to understand which will be useful during potential de
 4. `service` - name of the service where the given event occured, based on `application_prefix`,
 
 It is highly recommended to use a shared database for storing traces. It's not ideal, but the benefits of storing traces in a single DB shared by the applications outweigh the disadvantages in many cases.
+
+Since distributed tracing is a secondary feature, all exceptions coming from the database are rescued. It is highly recommended to provide `error_notification_service` to be notified about these errors. If you are not happy with that behavior and you would prefer to have errors raised, you can implement your own `database_error_handler` where you can re-raise the exception.
 
 ## Testing
 

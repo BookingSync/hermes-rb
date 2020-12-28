@@ -244,4 +244,40 @@ RSpec.describe Hermes::Configuration do
       end
     end
   end
+
+  describe "error_notification_service" do
+    subject(:error_notification_service) { configuration.error_notification_service }
+
+    let(:configuration) { Hermes::Configuration.new }
+
+    context "when error_notification_service is set" do
+      before do
+        configuration.error_notification_service = "error_notification_service"
+      end
+
+      it { is_expected.to eq "error_notification_service" }
+    end
+
+    context "when error_notification_service is not set" do
+      it { is_expected.to eq Hermes::NullErrorNotificationService }
+    end
+  end
+
+  describe "database_error_handler" do
+    subject(:database_error_handler) { configuration.database_error_handler }
+
+    let(:configuration) { Hermes::Configuration.new }
+
+    context "when error_notification_service is set" do
+      before do
+        configuration.database_error_handler = "database_error_handler"
+      end
+
+      it { is_expected.to eq "database_error_handler" }
+    end
+
+    context "when error_notification_service is not set" do
+      it { is_expected.to be_instance_of Hermes::DatabaseErrorHandler }
+    end
+  end
 end
