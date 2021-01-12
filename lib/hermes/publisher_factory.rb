@@ -1,7 +1,6 @@
 require "hermes/publisher/hutch_adapter"
 require "hermes/publisher/in_memory_adapter"
 
-
 module Hermes
   class PublisherFactory
     def self.build(adapter)

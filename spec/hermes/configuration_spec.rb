@@ -4,7 +4,7 @@ RSpec.describe Hermes::Configuration do
   describe "adapter" do
     subject(:adapter) { configuration.adapter }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.adapter = "bookingsync"
@@ -16,7 +16,7 @@ RSpec.describe Hermes::Configuration do
   describe "clock" do
     subject(:clock) { configuration.clock }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.clock = Time
@@ -28,7 +28,7 @@ RSpec.describe Hermes::Configuration do
   describe "clock" do
     subject(:clock) { configuration.clock }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.clock = Time
@@ -40,7 +40,7 @@ RSpec.describe Hermes::Configuration do
   describe "application_prefix" do
     subject(:application_prefix) { configuration.application_prefix }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.application_prefix = "bookingsync"
@@ -52,7 +52,7 @@ RSpec.describe Hermes::Configuration do
   describe "background_processor" do
     subject(:background_processor) { configuration.background_processor }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.background_processor = Object
@@ -64,7 +64,7 @@ RSpec.describe Hermes::Configuration do
   describe "enqueue_method" do
     subject(:enqueue_method) { configuration.enqueue_method }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.enqueue_method = :whatever_it_takes
@@ -76,7 +76,7 @@ RSpec.describe Hermes::Configuration do
   describe "event_handler" do
     subject(:event_handler) { configuration.event_handler }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.event_handler = :bookingsync
@@ -88,7 +88,7 @@ RSpec.describe Hermes::Configuration do
   describe "hutch" do
     subject(:hutch_uri) { configuration.hutch.uri }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     before do
       configuration.configure_hutch do |hutch|
@@ -102,7 +102,7 @@ RSpec.describe Hermes::Configuration do
   describe "rpc_call_timeout" do
     subject(:rpc_call_timeout) { configuration.rpc_call_timeout }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when it's set" do
       before do
@@ -120,7 +120,7 @@ RSpec.describe Hermes::Configuration do
   describe "instrumenter" do
     subject(:instrumenter) { configuration.instrumenter }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when it's set" do
       before do
@@ -138,7 +138,7 @@ RSpec.describe Hermes::Configuration do
   describe "#logger" do
     subject(:logger) { configuration.logger }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when it's set" do
       before do
@@ -156,7 +156,7 @@ RSpec.describe Hermes::Configuration do
   describe "distributed_tracing_database_uri" do
     subject(:distributed_tracing_database_uri) { configuration.distributed_tracing_database_uri }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when it's set" do
       before do
@@ -174,7 +174,7 @@ RSpec.describe Hermes::Configuration do
   describe "store_distributed_traces?" do
     subject(:store_distributed_traces?) { configuration.store_distributed_traces? }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when distributed_tracing_database_uri is set" do
       before do
@@ -192,7 +192,7 @@ RSpec.describe Hermes::Configuration do
   describe "distributed_tracing_database_table" do
     subject(:distributed_tracing_database_table) { configuration.distributed_tracing_database_table }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when distributed_tracing_database_table is set" do
       before do
@@ -210,7 +210,7 @@ RSpec.describe Hermes::Configuration do
   describe "distributes_tracing_mapper" do
     subject(:distributes_tracing_mapper) { configuration.distributes_tracing_mapper }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
     let(:attributes) do
       {
         event_class: "name",
@@ -245,10 +245,28 @@ RSpec.describe Hermes::Configuration do
     end
   end
 
+  describe "database_error_handler" do
+    subject(:database_error_handler) { configuration.database_error_handler }
+
+    let(:configuration) { described_class.new }
+
+    context "when error_notification_service is set" do
+      before do
+        configuration.database_error_handler = "database_error_handler"
+      end
+
+      it { is_expected.to eq "database_error_handler" }
+    end
+
+    context "when error_notification_service is not set" do
+      it { is_expected.to be_instance_of Hermes::DatabaseErrorHandler }
+    end
+  end
+
   describe "error_notification_service" do
     subject(:error_notification_service) { configuration.error_notification_service }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
     context "when error_notification_service is set" do
       before do
@@ -263,21 +281,57 @@ RSpec.describe Hermes::Configuration do
     end
   end
 
-  describe "database_error_handler" do
-    subject(:database_error_handler) { configuration.database_error_handler }
+  describe "producer_error_handler" do
+    subject(:producer_error_handler) { configuration.producer_error_handler }
 
-    let(:configuration) { Hermes::Configuration.new }
+    let(:configuration) { described_class.new }
 
-    context "when error_notification_service is set" do
+    context "when producer_error_handler is set" do
       before do
-        configuration.database_error_handler = "database_error_handler"
+        configuration.producer_error_handler = "producer_error_handler"
       end
 
-      it { is_expected.to eq "database_error_handler" }
+      it { is_expected.to eq "producer_error_handler" }
     end
 
-    context "when error_notification_service is not set" do
-      it { is_expected.to be_instance_of Hermes::DatabaseErrorHandler }
+    context "when producer_error_handler is not set" do
+      it { is_expected.to eq Hermes::ProducerErrorHandler::NullHandler }
+    end
+  end
+
+  describe "producer_error_handler_job_class" do
+    subject(:producer_error_handler_job_class) { configuration.producer_error_handler_job_class }
+
+    let(:configuration) { described_class.new }
+
+    context "when producer_error_handler_job_class is set" do
+      before do
+        configuration.producer_error_handler_job_class = "producer_error_handler_job_class"
+      end
+
+      it { is_expected.to eq "producer_error_handler_job_class" }
+    end
+
+    context "when producer_error_handler_job_class is not set" do
+      it { is_expected.to eq nil }
+    end
+  end
+
+  describe "producer_retryable" do
+    subject(:producer_retryable) { configuration.producer_retryable }
+
+    let(:configuration) { described_class.new }
+
+    context "when producer_retryable is set" do
+      before do
+        configuration.producer_retryable = "producer_retryable"
+      end
+
+      it { is_expected.to eq "producer_retryable" }
+    end
+
+    context "when producer_retryable is not set" do
+      it { is_expected.to be_instance_of Hermes::Retryable }
     end
   end
 end

@@ -136,7 +136,7 @@ If you don't care about it, you can leave it empty.
 
 13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) that has to return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. The default mapper just returns the original hash. You can use it if you want to remove, for example, some sensitive info from the event's body. Optional.
 
-14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Used when storing distributed traces, its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
+14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
 
 15. `database_error_handler` - `an object responding to `call` method taking one argument (error). Used when storing distributed traces. By default it uses `Hermes::DatabaseErrorHandler` which depends on `error_notification_service`, so in most cases, you will probably want to just configure `error_notification_service`. Optional.
 

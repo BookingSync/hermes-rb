@@ -214,6 +214,7 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
         publisher: publisher,
         serializer: serializer,
         distributed_trace_repository: distributed_trace_repository,
+        producer_error_handler: producer_error_handler,
         config: config
       )
     end
@@ -222,6 +223,16 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
       Class.new do
         def serialize(payload, version)
           payload.merge(version: version)
+        end
+      end.new
+    end
+    let(:producer_error_handler) do
+      Class.new do
+        attr_reader :event
+
+        def call(event)
+          @event = event
+          yield
         end
       end.new
     end
@@ -344,6 +355,16 @@ RSpec.describe Hermes::EventProducer, :with_application_prefix do
           .and_call_original
 
         publish
+      end
+    end
+
+    describe "usage of error handler" do
+      subject(:publish) { producer.publish(event) }
+
+      it "passes the :event argument as expected" do
+        expect {
+          publish
+        }.to change { producer_error_handler.event }.to(event)
       end
     end
   end
