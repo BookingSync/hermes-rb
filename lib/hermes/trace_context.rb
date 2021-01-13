@@ -12,7 +12,7 @@ module Hermes
     end
 
     def trace
-      @trace ||= origin_event_headers.fetch("X-B3-TraceId", SecureRandom.hex(32))
+      @trace ||= origin_event_headers.fetch(Hermes::B3PropagationModelHeaders.trace_id_key, SecureRandom.hex(32))
     end
 
     def span
@@ -20,7 +20,7 @@ module Hermes
     end
 
     def parent_span
-      origin_event_headers.fetch("X-B3-SpanId", nil)
+      origin_event_headers.fetch(Hermes::B3PropagationModelHeaders.span_id_key, nil)
     end
 
     def service

@@ -1,4 +1,28 @@
 RSpec.describe Hermes::B3PropagationModelHeaders do
+  describe ".trace_id_key" do
+    subject(:trace_id_key) { Hermes::B3PropagationModelHeaders.trace_id_key }
+
+    it { is_expected.to eq "X-B3-TraceId" }
+  end
+
+  describe ".span_id_key" do
+    subject(:span_id_key) { Hermes::B3PropagationModelHeaders.span_id_key }
+
+    it { is_expected.to eq "X-B3-SpanId" }
+  end
+
+  describe ".parent_span_id_key" do
+    subject(:parent_span_id_key) { Hermes::B3PropagationModelHeaders.parent_span_id_key }
+
+    it { is_expected.to eq "X-B3-ParentSpanId" }
+  end
+
+  describe ".sampled_key" do
+    subject(:sampled_key) { Hermes::B3PropagationModelHeaders.sampled_key }
+
+    it { is_expected.to eq "X-B3-Sampled" }
+  end
+
   describe "#as_json" do
     subject(:as_json) { described_class.new(trace_context).as_json }
 

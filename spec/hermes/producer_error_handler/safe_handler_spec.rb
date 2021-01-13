@@ -7,11 +7,11 @@ RSpec.describe Hermes::ProducerErrorHandler::SafeHandler do
     end
     let(:job_class) do
       Class.new do
-        attr_reader :event_class_name, :origin_body, :origin_headers
+        attr_reader :event_class_name, :event_body, :origin_headers
 
-        def enqueue(event_class_name, origin_body, origin_headers)
+        def enqueue(event_class_name, event_body, origin_headers)
           @event_class_name = event_class_name
-          @origin_body = origin_body
+          @event_body = event_body
           @origin_headers = origin_headers
         end
       end.new
@@ -57,12 +57,11 @@ RSpec.describe Hermes::ProducerErrorHandler::SafeHandler do
         expect {
           call
         }.to change { job_class.event_class_name }.to("EventForSafeHandlerTest")
-        .and change { job_class.origin_body }.to("id" => 1)
+        .and change { job_class.event_body }.to("id" => 1)
         .and change { job_class.origin_headers }.to("X-B3-TraceId" => "trace")
       end
 
       it "rescues form the exception" do
-
         expect {
           call
         }.not_to raise_error

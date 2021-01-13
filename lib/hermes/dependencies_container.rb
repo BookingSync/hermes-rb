@@ -69,16 +69,12 @@ module Hermes
       config.producer_error_handler
     end
 
-    def self.safe_producer_error_handler
-      Hermes::ProducerErrorHandler::SafeHandler.new(
-        job_class: config.producer_error_handler_job_class,
-        error_notifier: config.error_notification_service,
-        retryable: producer_retryable
-      )
-    end
-
     def self.producer_retryable
       config.producer_retryable
+    end
+
+    def self.objects_resolver
+      Object
     end
   end
 end

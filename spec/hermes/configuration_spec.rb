@@ -334,4 +334,23 @@ RSpec.describe Hermes::Configuration do
       it { is_expected.to be_instance_of Hermes::Retryable }
     end
   end
+
+  describe "#enable_safe_producer" do
+    subject(:enable_safe_producer) { configuration.enable_safe_producer(producer_error_handler_job_class) }
+
+    let(:configuration) { described_class.new }
+    let(:producer_error_handler_job_class) { double(:producer_error_handler_job_class) }
+
+    it "sets producer_error_handler_job_class" do
+      expect {
+        enable_safe_producer
+      }.to change { configuration.producer_error_handler_job_class }.to(producer_error_handler_job_class)
+    end
+
+    it "sets producer_error_handler to Hermes::ProducerErrorHandler::SafeHandler" do
+      expect {
+        enable_safe_producer
+      }.to change { configuration.producer_error_handler }.to(instance_of(Hermes::ProducerErrorHandler::SafeHandler))
+    end
+  end
 end

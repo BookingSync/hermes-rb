@@ -14,7 +14,7 @@ module Hermes
         retryable.perform { yield }
       rescue => error
         error_notifier.capture_exception(error)
-        job_class.enqueue(event.class.name, event.origin_body, event.origin_headers)
+        job_class.enqueue(event.class.name, event.as_json, event.origin_headers)
       end
     end
   end

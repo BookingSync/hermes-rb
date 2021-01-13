@@ -63,6 +63,16 @@ module Hermes
       @producer_retryable || Hermes::Retryable.new(times: 3, errors: [StandardError])
     end
 
+    def enable_safe_producer(producer_error_handler_job_class)
+      self.producer_error_handler_job_class = producer_error_handler_job_class
+
+      @producer_error_handler = Hermes::ProducerErrorHandler::SafeHandler.new(
+        job_class: producer_error_handler_job_class,
+        error_notifier: error_notification_service,
+        retryable: producer_retryable
+      )
+    end
+
     class HutchConfig
       attr_accessor :uri
     end
