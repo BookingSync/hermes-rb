@@ -240,8 +240,7 @@ To take advantage of this feature, apply the following logic in the initializer
 
 ``` rb
 Hermes.configure do |config|
-  config.clock = clock
-  config.error_notification_service = Raven
+  config.error_notification_service = Raven # required for this use case
   config.enable_safe_producer(HermesRecoveryJob)
 end
 ```
