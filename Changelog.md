@@ -1,6 +1,6 @@
 # Changelog
 
-## Master
+## 0.2.0
 - Implement "Safe Producer" extension allowing to retry delivery later in an automated way when publishing of the message fails.
 
 ## 0.1.0
