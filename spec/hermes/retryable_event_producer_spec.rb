@@ -45,7 +45,6 @@ RSpec.describe Hermes::RetryableEventProducer, :with_application_prefix do
 
 
     before do
-      # allow(SecureRandom).to receive(:hex) { "5354b4aee6ec3db2a9d0d0f5e54cba5d07127ac662c61289d223c52e3aa5a00d" }
       allow(SecureRandom).to receive(:uuid) { "d51a9023-7743-489d-be3e-dd1808aec36f" }
     end
 
