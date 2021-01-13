@@ -3,7 +3,8 @@ module Hermes
     attr_accessor :adapter, :clock, :hutch, :application_prefix, :logger,
       :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
       :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table,
-      :distributes_tracing_mapper, :database_error_handler, :error_notification_service
+      :distributes_tracing_mapper, :database_error_handler, :error_notification_service, :producer_error_handler,
+      :producer_error_handler_job_class, :producer_retryable
 
     def configure_hutch
       yield hutch
@@ -38,7 +39,7 @@ module Hermes
     end
 
     def distributes_tracing_mapper=(mapper)
-      raise ArgumentError.new("mapper must espond to :call method") if !mapper.respond_to?(:call)
+      raise ArgumentError.new("mapper must respond to :call method") if !mapper.respond_to?(:call)
       @distributes_tracing_mapper = mapper
     end
 
@@ -52,6 +53,24 @@ module Hermes
 
     def database_error_handler
       @database_error_handler || Hermes::DatabaseErrorHandler.new(error_notification_service: error_notification_service)
+    end
+
+    def producer_error_handler
+      @producer_error_handler || Hermes::ProducerErrorHandler::NullHandler
+    end
+
+    def producer_retryable
+      @producer_retryable || Hermes::Retryable.new(times: 3, errors: [StandardError])
+    end
+
+    def enable_safe_producer(producer_error_handler_job_class)
+      self.producer_error_handler_job_class = producer_error_handler_job_class
+
+      @producer_error_handler = Hermes::ProducerErrorHandler::SafeHandler.new(
+        job_class: producer_error_handler_job_class,
+        error_notifier: error_notification_service,
+        retryable: producer_retryable
+      )
     end
 
     class HutchConfig

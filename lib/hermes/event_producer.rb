@@ -2,8 +2,8 @@ module Hermes
   class EventProducer
     extend Forwardable
 
-    attr_reader :publisher, :serializer, :distributed_trace_repository, :config
-    private     :publisher, :serializer, :distributed_trace_repository, :config
+    attr_reader :publisher, :serializer, :distributed_trace_repository, :producer_error_handler, :config
+    private     :publisher, :serializer, :distributed_trace_repository, :producer_error_handler, :config
 
     def self.publish(event, properties = {}, options = {})
       build.publish(event, properties, options)
@@ -14,19 +14,23 @@ module Hermes
         publisher: Hermes::DependenciesContainer["publisher"],
         serializer: Hermes::DependenciesContainer["serializer"],
         distributed_trace_repository: Hermes::DependenciesContainer["distributed_trace_repository"],
+        producer_error_handler: Hermes::DependenciesContainer["producer_error_handler"],
         config: Hermes::DependenciesContainer["config"]
       )
     end
 
-    def initialize(publisher:, serializer:, distributed_trace_repository:, config:)
+    def initialize(publisher:, serializer:, distributed_trace_repository:, producer_error_handler:, config:)
       @publisher = publisher
       @serializer = serializer
       @distributed_trace_repository = distributed_trace_repository
+      @producer_error_handler = producer_error_handler
       @config = config
     end
 
     def publish(event, properties = {}, options = {})
-      publish_event(event, properties, options).tap { store_trace(event) }
+      producer_error_handler.call(event) do
+        publish_event(event, properties, options).tap { store_trace(event) }
+      end
     end
 
     private

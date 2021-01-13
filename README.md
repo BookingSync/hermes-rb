@@ -136,9 +136,13 @@ If you don't care about it, you can leave it empty.
 
 13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) that has to return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. The default mapper just returns the original hash. You can use it if you want to remove, for example, some sensitive info from the event's body. Optional.
 
-14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Used when storing distributed traces, its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
+14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
 
 15. `database_error_handler` - `an object responding to `call` method taking one argument (error). Used when storing distributed traces. By default it uses `Hermes::DatabaseErrorHandler` which depends on `error_notification_service`, so in most cases, you will probably want to just configure `error_notification_service`. Optional.
+
+16. `enable_safe_producer` - a method requiring a job class implementing `enqueue` method that will be responsible for retrying delivery of the event later in case it fails. Check `Safe Event Producer` section for more details.
+
+17. `producer_retryable` - used when `safe_producer` was enabled via (`enable_safe_producer`). By default, it is a method retrying delivery 3 times rescuing from `StandardError` each time. The object responsible for this behavior by default is: `Hermes::Retryable.new(times: 3, errors: [StandardError])`.
 
 ## RPC
 
@@ -225,6 +229,40 @@ Some important attributes to understand which will be useful during potential de
 It is highly recommended to use a shared database for storing traces. It's not ideal, but the benefits of storing traces in a single DB shared by the applications outweigh the disadvantages in many cases.
 
 Since distributed tracing is a secondary feature, all exceptions coming from the database are rescued. It is highly recommended to provide `error_notification_service` to be notified about these errors. If you are not happy with that behavior and you would prefer to have errors raised, you can implement your own `database_error_handler` where you can re-raise the exception.
+
+## Safe Event Producer
+
+Most likely in your production environment you are going to have a high availability setup with more than one node, probably at least 3. This might seem like there is very little chance that something will go wrong when publishing an event to RabbitMQ and even if it happens, it will be so rare that you will handle any exceptions manually. However, operations like updating Erlang will most likely require a downtime, which will mean that you might have a lot of errors during that period. Not to mention other potential issues, even without scheduled downtime, like the entire cluster being down for random reason or timeouts.
+
+In that case, it might be a good idea to have some automated way of dealing with this kind of issues. For that purpose, you can enable a `Safe Event Producer` - by default, it's going to try publishing event 3 times, rescuing twice from `StandardError`, and if it fails after a 3rd time, it's going to use `error_notification_service` to deliver info about the error that ahppened and is going to call `enqueue` method on a specified object.
+
+To take advantage of this feature, apply the following logic in the initializer
+
+``` rb
+Hermes.configure do |config|
+  config.clock = clock
+  config.error_notification_service = Raven
+  config.enable_safe_producer(HermesRecoveryJob)
+end
+```
+
+`HermesRecoveryJob` is expected to implement `enqueue` method taking 3 arguments: `event_class_name`, `event_body` and `headers`. What happens in `enqueue` method is up to you. You can, for example, schedule publishing the message in 5 minutes from now. However, the job should call `Hermes::RetryableEventProducer.publish(event_class, event_body, headers)` to properly handle the delivery retry flow. Here is an example job class using Sidekiq:
+
+``` rb
+class HermesRecoveryJob
+  include Sidekiq::Worker
+
+  sidekiq_options queue: :hermes_recovery
+
+  def self.enqueue(event_class, event_body, origin_headers)
+    perform_at(5.minutes.from_now, event_class, event_body, origin_headers)
+  end
+
+  def perform(event_class, event_body, origin_headers)
+    Hermes::RetryableEventProducer.publish(event_class, event_body, origin_headers)
+  end
+end
+```
 
 ## Testing
 
@@ -395,7 +433,7 @@ RSpec.describe HermesHandlerJob do
 end
 ```
 
-## Deployment and managing consumerzs
+## Deployment and managing consumers
 
 Hermes is just an extra layer on top of [hutch](https://github.com/gocardless/hutch), refer to Hutch's docs for more info about dealing with the workers and deployment.
 

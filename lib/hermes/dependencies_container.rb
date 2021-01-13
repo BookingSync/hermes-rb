@@ -64,5 +64,17 @@ module Hermes
     def self.database_error_handler
       config.database_error_handler
     end
+
+    def self.producer_error_handler
+      config.producer_error_handler
+    end
+
+    def self.producer_retryable
+      config.producer_retryable
+    end
+
+    def self.objects_resolver
+      Object
+    end
   end
 end
