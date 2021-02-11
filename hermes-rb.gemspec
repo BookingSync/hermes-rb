@@ -40,4 +40,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "timecop"
   spec.add_development_dependency "vcr"
   spec.add_development_dependency "pg"
+  spec.add_development_dependency "newrelic_rpm"
 end

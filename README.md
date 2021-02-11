@@ -36,6 +36,8 @@ Rails.application.config.to_prepare do
     config.instrumenter = Instrumenter
     config.configure_hutch do |hutch|
       hutch.uri = ENV.fetch("HUTCH_URI")
+      hutch.force_publisher_confirms = true
+      hutch.enable_http_api_use = false 
     end
     config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI", nil)
     config.error_notification_service = Raven
@@ -79,7 +81,10 @@ If you know what you are doing, you don't necessarily have to process things in 
 
 5. `event_handler` - an instance of event handler/storage, just use what is shown in the example.
 6. `clock` - a clock object that is time-zone aware, implementing `now` method.
-7. `configure_hutch` - a way to specify `hutch uri`, basically the URI for RabbitMQ.
+7. `configure_hutch` - a way to configure Hutch:
+   - `uri` - the URI for RabbitMQ, required.
+   - `force_publisher_confirms` - defaults to `true`
+   - `enable_http_api_use` - defaults to `false`
 8. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
 
 This class inherits from `Dry::Struct`, so getting familiar with [dry-struct gem](https://dry-rb.org/gems/dry-struct/) would be beneficial. Here is an example event:
@@ -171,6 +176,10 @@ parsed_response_hash = Hermes::RpcClient.new(rpc_call_timeout: 10).call(event)
 ```
 
 If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
+
+## NewRelic integration
+
+The integration is enabled automatically if you use `newrelic_rpm` gem via `Hutch::Tracers::NewRelic`.
 
 ## Distributed Tracing (experimental feature, the interface might change in the future)
 

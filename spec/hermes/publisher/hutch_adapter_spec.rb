@@ -6,21 +6,30 @@ RSpec.describe Hermes::Publisher::HutchAdapter do
 
     around do |example|
       original_value = Hermes.configuration.hutch.uri
-      Hermes.configuration.hutch.uri = "amqp://guest:guest@localhost:5672"
+      Hermes.configuration.configure_hutch do |hutch|
+        hutch.uri = "amqp://guest:guest@localhost:5672"
+      end
 
       VCR.use_cassette("Hermes::Publisher::HutchAdapter") do
         example.run
       end
 
-      Hermes.configuration.hutch.uri = original_value
+      Hermes.configuration.configure_hutch do |hutch|
+        hutch.uri = original_value
+      end
     end
 
-    it "initializes Hutch with a proper config" do
+    it "connects Hutch" do
       connect
 
       expect(Hutch::Config.get(:uri)).to eq "amqp://guest:guest@localhost:5672"
-      expect(Hutch::Config.get(:force_publisher_confirms)).to eq true
       expect(Hutch).to be_connected
+    end
+
+    it "uses :enable_http_api_use option when connecting to Hutch" do
+      expect(Hutch).to receive(:connect).with(enable_http_api_use: false).and_call_original
+
+      connect
     end
   end
 
@@ -29,21 +38,30 @@ RSpec.describe Hermes::Publisher::HutchAdapter do
 
     around do |example|
       original_value = Hermes.configuration.hutch.uri
-      Hermes.configuration.hutch.uri = "amqp://guest:guest@localhost:5672"
+      Hermes.configuration.configure_hutch do |hutch|
+        hutch.uri = "amqp://guest:guest@localhost:5672"
+      end
 
       VCR.use_cassette("Hermes::Publisher::HutchAdapter") do
         example.run
       end
 
-      Hermes.configuration.hutch.uri = original_value
+      Hermes.configuration.configure_hutch do |hutch|
+        hutch.uri = original_value
+      end
     end
 
-    it "has proper config" do
+    it "connects Hutch" do
       initialize_hutch
 
       expect(Hutch::Config.get(:uri)).to eq "amqp://guest:guest@localhost:5672"
-      expect(Hutch::Config.get(:force_publisher_confirms)).to eq true
       expect(Hutch).to be_connected
+    end
+
+    it "uses :enable_http_api_use option when connecting to Hutch" do
+      expect(Hutch).to receive(:connect).with(enable_http_api_use: false).and_call_original
+
+      initialize_hutch
     end
   end
 
