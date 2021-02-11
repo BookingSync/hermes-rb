@@ -3,10 +3,7 @@ require "hutch"
 module Hermes
   class Publisher::HutchAdapter
     def self.connect(configuration: Hermes::DependenciesContainer["hutch_config"])
-      Hutch::Config.set(:uri, configuration.uri)
-      Hutch::Config.set(:force_publisher_confirms, true)
-      Hutch::Config.set(:tracer, Hutch::Tracers::NewRelic) if Object.const_defined?("NewRelic")
-      Hutch.connect(enable_http_api_use: false)
+      Hutch.connect(enable_http_api_use: configuration.enable_http_api_use)
     end
 
     def initialize(configuration: Hermes::DependenciesContainer["hutch_config"])

@@ -8,6 +8,7 @@ module Hermes
 
     def configure_hutch
       yield hutch
+      hutch.commit_config
     end
 
     def self.configure
@@ -74,7 +75,32 @@ module Hermes
     end
 
     class HutchConfig
-      attr_accessor :uri
+      attr_reader :original_hutch_config
+      private     :original_hutch_config
+
+      attr_accessor :uri, :force_publisher_confirms, :enable_http_api_use
+
+      def initialize(original_hutch_config: Hutch::Config)
+        @original_hutch_config = original_hutch_config
+      end
+
+      def commit_config
+        original_hutch_config.set(:tracer, Hutch::Tracers::NewRelic) if Object.const_defined?("NewRelic")
+        original_hutch_config.set(:force_publisher_confirms, force_publisher_confirms)
+        original_hutch_config.set(:uri, uri)
+      end
+
+      def force_publisher_confirms
+        return @force_publisher_confirms if defined?(@force_publisher_confirms)
+
+        @force_publisher_confirms ||= true
+      end
+
+      def enable_http_api_use
+        return @enable_http_api_use if defined?(@enable_http_api_use)
+
+        @enable_http_api_use ||= false
+      end
     end
     private_constant :HutchConfig
   end

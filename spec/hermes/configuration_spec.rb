@@ -86,17 +86,163 @@ RSpec.describe Hermes::Configuration do
   end
 
   describe "hutch" do
-    subject(:hutch_uri) { configuration.hutch.uri }
+    describe "#configure_hutch" do
+      subject(:configure_hutch) do
+        configuration.configure_hutch do |hutch|
+          hutch.uri = "URI"
+          hutch.force_publisher_confirms = false
+        end
+      end
 
-    let(:configuration) { described_class.new }
+      let(:configuration) { described_class.new }
+      let(:hutch_config) { configuration.hutch }
 
-    before do
-      configuration.configure_hutch do |hutch|
-        hutch.uri = "#WhateverItTakes"
+      before do
+        Hutch::Config.set(:tracer, nil)
+        Hutch::Config.set(:uri, nil)
+        Hutch::Config.set(:force_publisher_confirms, true)
+      end
+
+      it "assigns values to hutch config" do
+        expect {
+          configure_hutch
+        }.to change { hutch_config.uri }.from(nil).to("URI")
+        .and change { hutch_config.force_publisher_confirms }.from(true).to(false)
+      end
+
+      it "assigns configuration to Hutch::Config from Hutch gem" do
+        expect {
+          configure_hutch
+        }.to change { Hutch::Config.get(:uri) }.from(nil).to("URI")
+        .and change { Hutch::Config.get(:force_publisher_confirms) }.from(true).to(false)
+        .and change { Hutch::Config.get(:tracer) }.to(Hutch::Tracers::NewRelic)
       end
     end
 
-    it { is_expected.to eq "#WhateverItTakes" }
+    describe "uri" do
+      subject(:hutch_uri) { configuration.hutch.uri }
+
+      let(:configuration) { described_class.new }
+
+      before do
+        configuration.configure_hutch do |hutch|
+          hutch.uri = "#WhateverItTakes"
+        end
+      end
+
+      it { is_expected.to eq "#WhateverItTakes" }
+    end
+
+    describe "force_publisher_confirms" do
+      subject(:force_publisher_confirms) { configuration.hutch.force_publisher_confirms }
+
+      let(:configuration) { described_class.new }
+
+      context "when set to false" do
+        before do
+          configuration.configure_hutch do |hutch|
+            hutch.force_publisher_confirms = false
+          end
+        end
+
+        it { is_expected.to eq false }
+      end
+
+      context "when set to true" do
+        before do
+          configuration.configure_hutch do |hutch|
+            hutch.force_publisher_confirms = true
+          end
+        end
+
+        it { is_expected.to eq true }
+      end
+
+      context "when not set explicitly" do
+        it { is_expected.to eq true }
+      end
+    end
+
+    describe "enable_http_api_use" do
+      subject(:enable_http_api_use) { configuration.hutch.enable_http_api_use }
+
+      let(:configuration) { described_class.new }
+
+      context "when set to false" do
+        before do
+          configuration.configure_hutch do |hutch|
+            hutch.enable_http_api_use = false
+          end
+        end
+
+        it { is_expected.to eq false }
+      end
+
+      context "when set to true" do
+        before do
+          configuration.configure_hutch do |hutch|
+            hutch.enable_http_api_use = true
+          end
+        end
+
+        it { is_expected.to eq true }
+      end
+
+      context "when not set explicitly" do
+        it { is_expected.to eq false }
+      end
+    end
+
+    describe "#commit_config" do
+      subject(:commit_config) do
+        hutch_config.force_publisher_confirms = true
+        hutch_config.uri = "URI"
+        hutch_config.commit_config
+      end
+
+      let(:configuration) { described_class.new }
+      let(:hutch_config) { configuration.hutch }
+
+      before do
+        Hutch::Config.set(:tracer, nil)
+        Hutch::Config.set(:uri, nil)
+        Hutch::Config.set(:force_publisher_confirms, false)
+      end
+
+      after do
+        Hutch::Config.set(:tracer, nil)
+      end
+
+      it "assigns configuration to Hutch::Config from Hutch gem" do
+        expect {
+          commit_config
+        }.to change { Hutch::Config.get(:uri) }.from(nil).to("URI")
+        .and change { Hutch::Config.get(:force_publisher_confirms) }.from(false).to(true)
+      end
+
+      context "NewRelic" do
+        context "when constant is defined" do
+          it "sets NewRelic tracer" do
+            expect {
+              commit_config
+            }.to change { Hutch::Config.get(:tracer) }.to(Hutch::Tracers::NewRelic)
+          end
+        end
+
+        context "when constant is not defined" do
+          before do
+            allow(Object).to receive(:const_defined?).with("NewRelic").and_return(false)
+          end
+
+
+          it "does not set NewRelic tracer" do
+            expect {
+              commit_config
+            }.not_to change { Hutch::Config.get(:tracer) }
+          end
+        end
+      end
+    end
   end
 
   describe "rpc_call_timeout" do

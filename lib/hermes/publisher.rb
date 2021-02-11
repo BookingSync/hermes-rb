@@ -1,19 +1,19 @@
 require "forwardable"
 require "singleton"
 
-
 module Hermes
   class Publisher
     include Singleton
     extend Forwardable
 
-    attr_reader :mutex
-    private     :mutex
+    attr_reader :configuration, :mutex
+    private     :configuration, :mutex
 
     def_delegators :current_adapter, :publish
 
-    def initialize
-      super
+    def initialize(configuration: Hermes::DependenciesContainer["config"])
+      super()
+      @configuration = configuration
       @mutex = Mutex.new
     end
 
@@ -33,16 +33,6 @@ module Hermes
           Hermes::PublisherFactory.build(configuration.adapter)
         end
       end
-    end
-
-    def connect
-      current_adapter.class.connect
-    end
-
-    private
-
-    def configuration
-      Hermes.configuration
     end
   end
 end
