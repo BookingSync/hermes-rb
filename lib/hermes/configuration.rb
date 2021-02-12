@@ -45,7 +45,7 @@ module Hermes
     end
 
     def distributes_tracing_mapper
-      @distributes_tracing_mapper || ->(attributes) { attributes }
+      @distributes_tracing_mapper || Hermes::DistributedTrace::Mapper.new
     end
 
     def error_notification_service

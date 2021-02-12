@@ -385,9 +385,7 @@ RSpec.describe Hermes::Configuration do
     end
 
     context "when distributed_tracing_database_uri is not set" do
-      it "returns the default mapper" do
-        expect(distributes_tracing_mapper.call(attributes)).to eq(attributes)
-      end
+      it { is_expected.to be_instance_of(Hermes::DistributedTrace::Mapper) }
     end
   end
 
