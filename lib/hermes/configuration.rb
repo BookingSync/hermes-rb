@@ -4,7 +4,7 @@ module Hermes
       :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
       :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table,
       :distributes_tracing_mapper, :database_error_handler, :error_notification_service, :producer_error_handler,
-      :producer_error_handler_job_class, :producer_retryable
+      :producer_error_handler_job_class, :producer_retryable, :logger_params_filter
 
     def configure_hutch
       yield hutch
@@ -72,6 +72,10 @@ module Hermes
         error_notifier: error_notification_service,
         retryable: producer_retryable
       )
+    end
+
+    def logger_params_filter
+      @logger_params_filter || Hermes::Logger::ParamsFilter.new
     end
 
     class HutchConfig

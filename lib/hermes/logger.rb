@@ -1,15 +1,12 @@
 module Hermes
   class Logger
-    SENSITIVE_ATTRIBUTES_KEYWORDS = %w(token password credit_card).freeze
-    STRIPPED_VALUE = "[STRIPPED]".freeze
+    attr_reader :backend, :logger_params_filter
+    private     :backend, :logger_params_filter
 
-    private_constant :SENSITIVE_ATTRIBUTES_KEYWORDS, :STRIPPED_VALUE
-
-    attr_reader :backend
-    private     :backend
-
-    def initialize(backend: Hutch.logger)
+    def initialize(backend: Hermes::DependenciesContainer["hutch_logger"],
+    logger_params_filter: Hermes::DependenciesContainer["logger_params_filter"])
       @backend = backend
+      @logger_params_filter = logger_params_filter
     end
 
     def log_enqueued(event_class, body, headers, timestamp)
@@ -23,13 +20,9 @@ module Hermes
     private
 
     def strip_sensitive_info(body)
-      body.stringify_keys.map do |attribute, value|
-        if SENSITIVE_ATTRIBUTES_KEYWORDS.any? { |sensitive_attribute| attribute.match(sensitive_attribute) }
-          [attribute, STRIPPED_VALUE]
-        else
-          [attribute, value]
-        end
-      end.to_h
+      body.deep_dup.tap do |body_copy|
+        body_copy.each { |key, value| logger_params_filter.call(key, value) }
+      end
     end
   end
 end

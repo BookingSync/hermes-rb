@@ -499,4 +499,22 @@ RSpec.describe Hermes::Configuration do
       }.to change { configuration.producer_error_handler }.to(instance_of(Hermes::ProducerErrorHandler::SafeHandler))
     end
   end
+
+  describe "logger_params_filter" do
+    subject(:logger_params_filter) { configuration.logger_params_filter }
+
+    let(:configuration) { described_class.new }
+
+    context "when logger_params_filter is set" do
+      before do
+        configuration.logger_params_filter = "logger_params_filter"
+      end
+
+      it { is_expected.to eq "logger_params_filter" }
+    end
+
+    context "when logger_params_filter is not set" do
+      it { is_expected.to be_instance_of Hermes::Logger::ParamsFilter }
+    end
+  end
 end
