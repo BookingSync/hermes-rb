@@ -51,3 +51,4 @@ module Hermes
 end
 
 require "hermes/distributed_trace"
+require "hermes/distributed_trace/mapper"
