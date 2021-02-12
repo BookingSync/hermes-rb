@@ -149,6 +149,9 @@ If you don't care about it, you can leave it empty.
 
 17. `producer_retryable` - used when `safe_producer` was enabled via (`enable_safe_producer`). By default, it is a method retrying delivery 3 times rescuing from `StandardError` each time. The object responsible for this behavior by default is: `Hermes::Retryable.new(times: 3, errors: [StandardError])`.
 
+18. `logger_params_filter` - a service used as params filter for logger, to make sure no sensitive data will be logged. It defaults to `Hermes::Logger::ParamsFilter` which already performs some filtering but it might not be enough in your case. If you are not satisfied with the defaults, you have 2 options, which are especially simple in Rails apps:
+   - provide custom array of sensitive attributes and still use a default filter: `Hermes::Logger::ParamsFilter.new(sensitive_keywords: Rails.application.config.filter_parameters)`.
+   - provide custom filter object, which responds to `call` method and takes 2 arguments: attribute name and its value and performs mutation by using `gsub!` (don't worry, the entire body is cloned before passing it to the filter, so nothing unexpected will happen). This is compatible with the interface of `Rails.application.config.filter_parameters` when you use a custom filter there. In such case, you can do something like this: `Rails.application.config.filter_parameters = [Proc.new { |k, v| do_something_custom_here(k, v) }]` and then just assign `Rails.application.config.filter_parameters.first` in the Hermes config.  
 ## RPC
 
 If you want to handle RPC call, you need to add `rpc: true` flag. Keep in mind that RPC requires a synchronous processing and response, so you also need to set `async: false`. The routing key and correlation ID will be resolved based on the message that is published by the client. The payload that is sent back will be what event handler reutrns, so it might be a good idea to just return a hash so that you can operate on JSON easily.

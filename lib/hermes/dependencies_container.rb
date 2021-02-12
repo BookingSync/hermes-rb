@@ -73,6 +73,14 @@ module Hermes
       config.producer_retryable
     end
 
+    def self.hutch_logger
+      Hutch.logger
+    end
+
+    def self.logger_params_filter
+      config.logger_params_filter
+    end
+
     def self.objects_resolver
       Object
     end
