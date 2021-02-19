@@ -2,6 +2,9 @@
 
 ## Master
 
+## 0.3.1
+- Fix filtering params for logs for nil values in sensitive attributes
+
 ## 0.3.0
 - Reorganize Hutch config - instead of setting config values when connecting to Hutch when using publisher, do it right after the initialization.
 - Make params filter customizable for the logger
