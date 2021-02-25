@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Hermes::ConsumerBuilder do
+RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
   describe ".build" do
     subject(:build) { builder.build(EventClassForTestingConsumerBuilder) }
 
@@ -8,7 +8,8 @@ RSpec.describe Hermes::ConsumerBuilder do
 
     class EventClassForTestingConsumerBuilder < Hermes::BaseEvent
       def self.routing_key
-        "routing_key.for_consumer_test"
+        # add extra suffix in case Rabbit complains about "precondition failed" when a queue was registered with different config
+        "routing_key.for_consumer_test_#{Time.now.to_i}"
       end
 
       def self.to_s
@@ -133,8 +134,8 @@ RSpec.describe Hermes::ConsumerBuilder do
     it "builds a Hutch consumer class with a routing key and queue name based on event name" do
       consumer = build
 
-      expect(consumer.get_queue_name).to eq "app_prefix.routing_key.for_consumer_test.queue"
-      expect(consumer.routing_keys.to_a).to eq ["routing_key.for_consumer_test"]
+      expect(consumer.get_queue_name).to eq "app_prefix.routing_key.for_consumer_test_#{Time.now.to_i}.queue"
+      expect(consumer.routing_keys.to_a).to eq ["routing_key.for_consumer_test_#{Time.now.to_i}"]
     end
 
     describe "processing" do
@@ -256,6 +257,69 @@ RSpec.describe Hermes::ConsumerBuilder do
       consumer = build
 
       expect(consumer).to eq EventClassForTestingConsumerBuilderHutchConsumer
+    end
+
+    describe "consumer config" do
+      context "without extra config" do
+        class AnotherEventClassForTestingConsumerBuilderWithoutExtraConfig < Hermes::BaseEvent
+          def self.routing_key
+            # add extra suffix in case Rabbit complains about "precondition failed" when a queue was registered with different config
+            "routing_key.another_for_consumer_without_extra_config_test_#{Time.now.to_i}"
+          end
+
+          def self.to_s
+            "AnotherEventClassForTestingConsumerBuilderWithoutExtraConfig"
+          end
+
+          attribute :bookingsync, Types::Nominal::String
+        end
+
+        subject(:consumer) { builder.build(AnotherEventClassForTestingConsumerBuilderWithoutExtraConfig) }
+
+        let(:expected_arguments) do
+          {}
+        end
+
+        it "does not set any arguments on consumer by default" do
+          expect(consumer.get_arguments).to eq(expected_arguments)
+        end
+      end
+
+      context "with extra config" do
+        class AnotherEventClassForTestingConsumerBuilderWithExtraConfig < Hermes::BaseEvent
+          def self.routing_key
+            # add extra suffix in case Rabbit complains about "precondition failed" when a queue was registered with different config
+            "routing_key.another_for_consumer_with_extra_config_test_#{Time.now.to_i}"
+          end
+
+          def self.to_s
+            "AnotherEventClassForTestingConsumerBuilderWithExtraConfig"
+          end
+
+          attribute :bookingsync, Types::Nominal::String
+        end
+
+        subject(:consumer) { builder.build(AnotherEventClassForTestingConsumerBuilderWithExtraConfig, consumer_config: consumer_config) }
+
+        let(:consumer_config) do
+          -> do
+            classic_queue
+            quorum_queue initial_group_size: 3
+            arguments "x-max-length" => 10
+          end
+        end
+        let(:expected_arguments) do
+          {
+            "x-max-length" => 10,
+            "x-quorum-initial-group-size" => 3,
+            "x-queue-type" => "quorum"
+          }
+        end
+
+        it "allows to provider extra config for consumer" do
+          expect(consumer.get_arguments).to eq(expected_arguments)
+        end
+      end
     end
   end
 end

@@ -84,5 +84,9 @@ module Hermes
     def self.objects_resolver
       Object
     end
+
+    def self.consumer_builder
+      Hermes::ConsumerBuilder.new
+    end
   end
 end
