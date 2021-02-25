@@ -45,8 +45,15 @@ Rails.application.config.to_prepare do
 
   event_handler.handle_events do
     handle Events::Example::Happened, with: Example::HappenedHandler
-
     handle Events::Example::SyncCallHappened, with: Example::SyncCallHappenedHandler, async: false
+    
+    extra_consumer_config = -> do
+      classic_queue
+      quorum_queue initial_group_size: 3
+      arguments "x-max-length" => 10
+    end
+    handle Events::Example::SomethingHappenedWithExtraConsumerConfig, with: Example::SomethingHappenedWithExtraConsumerConfigHandler,
+      consumer_config: extra_consumer_config
   end
 
   # if you care about distributed tracing
@@ -79,7 +86,7 @@ end
 
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
 
-5. `event_handler` - an instance of event handler/storage, just use what is shown in the example.
+5. `event_handler` - an instance of event handler/storage, just use what is shown in the example. Notice that you can also pass extra consumer config lambda that will be evaluated within the context of Hutch consumer.
 6. `clock` - a clock object that is time-zone aware, implementing `now` method.
 7. `configure_hutch` - a way to configure Hutch:
    - `uri` - the URI for RabbitMQ, required.

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Master
+- Make it possible to provide Hutch consumer config
 
 ## 0.3.1
 - Fix filtering params for logs for nil values in sensitive attributes

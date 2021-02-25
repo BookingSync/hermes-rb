@@ -2,7 +2,7 @@ require "hutch"
 
 module Hermes
   class ConsumerBuilder
-    def build(event_class)
+    def build(event_class, consumer_config: -> {})
       queue = queue_name_from_event(event_class)
       routing_key = event_class.routing_key
       consumer_name = consumer_name_from_event(event_class)
@@ -12,6 +12,7 @@ module Hermes
 
         consume routing_key
         queue_name queue
+        instance_exec(&consumer_config)
 
         define_method :process do |message|
           instrumenter.instrument("Hermes.Consumer.process") do
