@@ -1,6 +1,8 @@
 # Changelog
 
 ## Master
+
+## 0.4.0
 - Make it possible to provide Hutch consumer config
 
 ## 0.3.1
