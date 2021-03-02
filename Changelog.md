@@ -1,6 +1,8 @@
 # Changelog
 
 ## Master
+
+## 0.5.0
 - Add Datadog tracer
 - Allow to provide a custom tracer
 
