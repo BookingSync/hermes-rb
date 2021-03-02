@@ -115,7 +115,7 @@ RSpec.describe Hermes::Configuration do
           configure_hutch
         }.to change { Hutch::Config.get(:uri) }.from(nil).to("URI")
         .and change { Hutch::Config.get(:force_publisher_confirms) }.from(true).to(false)
-        .and change { Hutch::Config.get(:tracer) }.to(Hermes::Tracers::DataDog)
+        .and change { Hutch::Config.get(:tracer) }.to(Hermes::Tracers::Datadog)
       end
     end
 
@@ -215,20 +215,20 @@ RSpec.describe Hermes::Configuration do
           allow(Object).to receive(:const_defined?).and_call_original
         end
 
-        context "when DataDog constant is defined and NewRelic constant is defined" do
-          it { is_expected.to eq Hermes::Tracers::DataDog }
+        context "when Datadog constant is defined and NewRelic constant is defined" do
+          it { is_expected.to eq Hermes::Tracers::Datadog }
         end
 
-        context "when DataDog constant is defined and NewRelic constant is not defined" do
+        context "when Datadog constant is defined and NewRelic constant is not defined" do
           before do
             allow(Object).to receive(:const_defined?).with("NewRelic").and_return(false)
             allow(Object).to receive(:const_defined?).with("Datadog").and_return(true)
           end
 
-          it { is_expected.to eq Hermes::Tracers::DataDog }
+          it { is_expected.to eq Hermes::Tracers::Datadog }
         end
 
-        context "when DataDog constant is not defined and NewRelic constant is defined" do
+        context "when Datadog constant is not defined and NewRelic constant is defined" do
           before do
             allow(Object).to receive(:const_defined?).with("Datadog").and_return(false)
             allow(Object).to receive(:const_defined?).with("NewRelic").and_return(true)
@@ -237,7 +237,7 @@ RSpec.describe Hermes::Configuration do
           it { is_expected.to eq Hutch::Tracers::NewRelic }
         end
 
-        context "when neither DataDog constant is defined, nor NewRelic constant is defined" do
+        context "when neither Datadog constant is defined, nor NewRelic constant is defined" do
           before do
             allow(Object).to receive(:const_defined?).with("NewRelic").and_return(false)
             allow(Object).to receive(:const_defined?).with("Datadog").and_return(false)
@@ -298,18 +298,18 @@ RSpec.describe Hermes::Configuration do
               allow(Object).to receive(:const_defined?).with("NewRelic").and_return(false)
             end
 
-            it "sets DataDog tracer" do
+            it "sets Datadog tracer" do
               expect {
                 commit_config
-              }.to change { Hutch::Config.get(:tracer) }.to(Hermes::Tracers::DataDog)
+              }.to change { Hutch::Config.get(:tracer) }.to(Hermes::Tracers::Datadog)
             end
           end
 
           context "when Datadog constant is defined and NewRelic constant is also defined" do
-            it "sets DataDog tracer" do
+            it "sets Datadog tracer" do
               expect {
                 commit_config
-              }.to change { Hutch::Config.get(:tracer) }.to(Hermes::Tracers::DataDog)
+              }.to change { Hutch::Config.get(:tracer) }.to(Hermes::Tracers::Datadog)
             end
           end
 

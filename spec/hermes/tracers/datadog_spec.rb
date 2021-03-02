@@ -1,4 +1,4 @@
-RSpec.describe Hermes::Tracers::DataDog do
+RSpec.describe Hermes::Tracers::Datadog do
   describe "#handle" do
     subject(:handle) { tracer.handle(message) }
 

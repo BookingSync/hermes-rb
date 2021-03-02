@@ -38,6 +38,7 @@ Rails.application.config.to_prepare do
       hutch.uri = ENV.fetch("HUTCH_URI")
       hutch.force_publisher_confirms = true
       hutch.enable_http_api_use = false 
+      hutch.tracer = MyOwnCustomTracerIfIWantToDoSomethingCrazy 
     end
     config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI", nil)
     config.error_notification_service = Raven
@@ -92,6 +93,7 @@ If you know what you are doing, you don't necessarily have to process things in 
    - `uri` - the URI for RabbitMQ, required.
    - `force_publisher_confirms` - defaults to `true`
    - `enable_http_api_use` - defaults to `false`
+   - `tracer` - defaults to `Hermes::Tracers::Datadog` if you use Datadog, `Hutch::Tracers::NewRelic` for NewRelic and `Hutch::Tracers::NullTracer` if you use neither Datadog, nor NewRelic. Check APM section for more details if you want to provide a custom tracer.
 8. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
 
 This class inherits from `Dry::Struct`, so getting familiar with [dry-struct gem](https://dry-rb.org/gems/dry-struct/) would be beneficial. Here is an example event:
@@ -187,9 +189,11 @@ parsed_response_hash = Hermes::RpcClient.new(rpc_call_timeout: 10).call(event)
 
 If the request timeouts, `Hermes::RpcClient::RpcTimeoutError` will be raised.
 
-## NewRelic integration
+## APM and tracing
 
-The integration is enabled automatically if you use `newrelic_rpm` gem via `Hutch::Tracers::NewRelic`.
+The integration is enabled automatically if you use `newrelic_rpm` gem via `Hutch::Tracers::NewRelic` or via `Hermes::Tracers::Datadog` when using `ddtrace` gem.
+
+You can also provide your own tracer, as long as it implements an interface expected by [Hutch][https://github.com/ruby-amqp/hutch].
 
 ## Distributed Tracing (experimental feature, the interface might change in the future)
 

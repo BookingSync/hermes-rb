@@ -1,5 +1,5 @@
 module Hermes
   module Tracers
-    autoload :DataDog, "hermes/tracers/data_dog"
+    autoload :Datadog, "hermes/tracers/datadog"
   end
 end

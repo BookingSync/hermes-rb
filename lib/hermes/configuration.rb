@@ -108,7 +108,7 @@ module Hermes
 
       def tracer
         return @tracer if @tracer
-        return Hermes::Tracers::DataDog if Object.const_defined?("Datadog")
+        return Hermes::Tracers::Datadog if Object.const_defined?("Datadog")
         return Hutch::Tracers::NewRelic if Object.const_defined?("NewRelic")
         Hutch::Tracers::NullTracer
       end

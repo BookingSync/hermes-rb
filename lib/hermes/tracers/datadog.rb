@@ -2,7 +2,7 @@ require "ddtrace"
 
 module Hermes
   module Tracers
-    class DataDog
+    class Datadog
       attr_reader :klass
       private     :klass
 
@@ -11,7 +11,7 @@ module Hermes
       end
 
       def handle(message)
-        Datadog.tracer.trace(klass.class.name, service: "hermes", span_type: "rabbitmq") do
+        ::Datadog.tracer.trace(klass.class.name, service: "hermes", span_type: "rabbitmq") do
           klass.process(message)
         end
       end
