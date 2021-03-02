@@ -1,6 +1,8 @@
 # Changelog
 
 ## Master
+- Add DataDog tracer
+- Allow to provide a custom tracer
 
 ## 0.4.0
 - Make it possible to provide Hutch consumer config

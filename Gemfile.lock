@@ -29,6 +29,8 @@ GEM
     carrot-top (0.0.7)
       json
     concurrent-ruby (1.1.8)
+    ddtrace (0.45.0)
+      msgpack
     diff-lcs (1.4.4)
     dry-configurable (0.12.1)
       concurrent-ruby (~> 1.0)
@@ -62,6 +64,7 @@ GEM
     ice_nine (0.11.2)
     json (2.5.1)
     minitest (5.14.3)
+    msgpack (1.4.2)
     multi_json (1.15.0)
     newrelic_rpm (6.15.0)
     pg (1.2.3)
@@ -93,6 +96,7 @@ PLATFORMS
 
 DEPENDENCIES
   bundler
+  ddtrace
   hermes-rb!
   newrelic_rpm
   pg

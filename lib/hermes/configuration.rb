@@ -4,7 +4,7 @@ module Hermes
       :background_processor, :enqueue_method, :event_handler, :rpc_call_timeout,
       :instrumenter, :distributed_tracing_database_uri, :distributed_tracing_database_table,
       :distributes_tracing_mapper, :database_error_handler, :error_notification_service, :producer_error_handler,
-      :producer_error_handler_job_class, :producer_retryable, :logger_params_filter
+      :producer_error_handler_job_class, :producer_retryable, :logger_params_filter, :tracer
 
     def configure_hutch
       yield hutch
@@ -82,14 +82,14 @@ module Hermes
       attr_reader :original_hutch_config
       private     :original_hutch_config
 
-      attr_accessor :uri, :force_publisher_confirms, :enable_http_api_use
+      attr_accessor :uri, :force_publisher_confirms, :enable_http_api_use, :tracer
 
       def initialize(original_hutch_config: Hutch::Config)
         @original_hutch_config = original_hutch_config
       end
 
       def commit_config
-        original_hutch_config.set(:tracer, Hutch::Tracers::NewRelic) if Object.const_defined?("NewRelic")
+        original_hutch_config.set(:tracer, tracer) if tracer
         original_hutch_config.set(:force_publisher_confirms, force_publisher_confirms)
         original_hutch_config.set(:uri, uri)
       end
@@ -104,6 +104,13 @@ module Hermes
         return @enable_http_api_use if defined?(@enable_http_api_use)
 
         @enable_http_api_use ||= false
+      end
+
+      def tracer
+        return @tracer if @tracer
+        return Hermes::Tracers::DataDog if Object.const_defined?("Datadog")
+        return Hutch::Tracers::NewRelic if Object.const_defined?("NewRelic")
+        Hutch::Tracers::NullTracer
       end
     end
     private_constant :HutchConfig
