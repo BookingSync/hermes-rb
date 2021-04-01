@@ -1,7 +1,9 @@
 # Changelog
 
 ## Master
-- Add Healthcheck
+
+## 0.6.0
+- Add Health check
 
 ## 0.5.0
 - Add Datadog tracer
