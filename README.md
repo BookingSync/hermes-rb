@@ -471,10 +471,19 @@ config.add_custom_check("hermes") do
 end
 ```
 
+You can also use `bin/health_check` file to perform healthcheck - on success, the script exits with `0` status and on failure, it logs the error and exits with `1` status.
+
 To perform the actual check:
 
+1. Via `health_check` gem:
 ```
 curl -v localhost:3000/health_check/hermes.json
+```
+
+2. Via binary:
+
+```
+bin/health_check
 ```
 
 ## CircleCI config for installing RabbitMQ
