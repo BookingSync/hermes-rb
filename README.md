@@ -459,6 +459,24 @@ end
 
 Hermes is just an extra layer on top of [hutch](https://github.com/gocardless/hutch), refer to Hutch's docs for more info about dealing with the workers and deployment.
 
+## Health Checks
+
+If you want to perform a health check, use `Hermes::Checks::HealthCheck.check`, which checks if it's possible to connect RabbitMQ via Hutch.
+
+The interface is compliant with `health_check`[https://github.com/ianheggie/health_check] gem. If you want to add the custom health check, just add this to the config:
+
+``` rb
+config.add_custom_check("hermes") do
+  Hermes::Checks::HealthCheck.check
+end
+```
+
+To perform the actual check:
+
+```
+curl -v localhost:3000/health_check/hermes.json
+```
+
 ## CircleCI config for installing RabbitMQ
 
 Use `- image: brandembassy/rabbitmq:latest`
