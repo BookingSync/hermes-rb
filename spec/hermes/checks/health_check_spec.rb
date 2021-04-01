@@ -19,7 +19,7 @@ RSpec.describe Hermes::Checks::HealthCheck do
       end
 
       it "returns an error message" do
-        expect(check).to eq "[Hermes - Connection-level error: NOT_ALLOWED - vhost invalid not found] "
+        expect(check).to include("Hermes")
       end
     end
   end
