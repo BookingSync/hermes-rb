@@ -483,7 +483,7 @@ curl -v localhost:3000/health_check/hermes.json
 2. Via binary:
 
 ```
-bin/health_check
+bin/hermes_health_check
 ```
 
 ## CircleCI config for installing RabbitMQ
