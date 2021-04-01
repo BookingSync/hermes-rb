@@ -3,6 +3,10 @@ RSpec.describe Hermes::Checks::HealthCheck do
     subject(:check) { described_class.check }
 
     context "on success" do
+      before do
+        Hutch::Config.enable_http_api_use = false
+      end
+
       it "returns a blank string" do
         expect(check).to eq ""
       end
