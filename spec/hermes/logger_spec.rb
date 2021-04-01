@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe Hermes::Logger do
- let(:logger) { described_class.new(backend: logger_backend) }
+  let(:logger) { described_class.new(backend: logger_backend) }
   let(:logger_backend) do
     Class.new do
       attr_reader :registry
@@ -203,6 +203,19 @@ RSpec.describe Hermes::Logger do
           log_published
         }.not_to change { payload[:access_token] }
       end
+    end
+  end
+
+  describe "#log_health_check_failure" do
+    subject(:log_health_check_failure) { logger.log_health_check_failure(error) }
+
+    let(:error) { "could not connect" }
+    let(:expected_result) { ["[Hermes] health check failed: could not connect"] }
+
+    it "logs health check failure" do
+      expect {
+        log_health_check_failure
+      }.to change { logger_backend.registry }.from([]).to(expected_result)
     end
   end
 end

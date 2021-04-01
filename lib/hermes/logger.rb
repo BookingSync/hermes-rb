@@ -17,6 +17,10 @@ module Hermes
       backend.info "[Hutch] published event to: #{routing_key}, properties: #{properties}, body: #{strip_sensitive_info(body)} at #{timestamp}"
     end
 
+    def log_health_check_failure(error)
+      backend.info "[Hermes] health check failed: #{error}"
+    end
+
     private
 
     def strip_sensitive_info(body)

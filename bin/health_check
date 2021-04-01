@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require_relative "../lib/hermes-rb"
+
+result = Hermes::Checks::HealthCheck.check
+if result.empty?
+  exit 0
+else
+  Hermes::DependenciesContainer["logger"].log_health_check_failure(result)
+  exit 1
+end
