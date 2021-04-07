@@ -37,8 +37,8 @@ Rails.application.config.to_prepare do
     config.configure_hutch do |hutch|
       hutch.uri = ENV.fetch("HUTCH_URI")
       hutch.force_publisher_confirms = true
-      hutch.enable_http_api_use = false 
-      hutch.tracer = MyOwnCustomTracerIfIWantToDoSomethingCrazy 
+      hutch.enable_http_api_use = false
+      hutch.tracer = MyOwnCustomTracerIfIWantToDoSomethingCrazy
     end
     config.distributed_tracing_database_uri = ENV.fetch("DISTRIBUTED_TRACING_DATABASE_URI", nil)
     config.error_notification_service = Raven
@@ -47,7 +47,7 @@ Rails.application.config.to_prepare do
   event_handler.handle_events do
     handle Events::Example::Happened, with: Example::HappenedHandler
     handle Events::Example::SyncCallHappened, with: Example::SyncCallHappenedHandler, async: false
-    
+
     extra_consumer_config = -> do
       classic_queue
       quorum_queue initial_group_size: 3
@@ -148,7 +148,7 @@ If you don't care about it, you can leave it empty.
 
 12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`. Optional.
 
-13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) which must return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. It defaults to `Hermes::DistributedTrace::Mapper`, which uses `logger_params_filter` to remove sensitive info (this config option is covered below). You can either provide a custom mapper or pass a custom params filter, for example: `Hermes::DistributedTrace::Mapper.new(params_filter: custom_params_filter)` 
+13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) which must return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. It defaults to `Hermes::DistributedTrace::Mapper`, which uses `logger_params_filter` to remove sensitive info (this config option is covered below). You can either provide a custom mapper or pass a custom params filter, for example: `Hermes::DistributedTrace::Mapper.new(params_filter: custom_params_filter)`
 
 14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
 
@@ -160,7 +160,7 @@ If you don't care about it, you can leave it empty.
 
 18. `logger_params_filter` - a service used as params filter for logger, to make sure no sensitive data will be logged. It defaults to `Hermes::Logger::ParamsFilter` which already performs some filtering but it might not be enough in your case. If you are not satisfied with the defaults, you have 2 options, which are especially simple in Rails apps:
    - provide custom array of sensitive attributes and still use a default filter: `Hermes::Logger::ParamsFilter.new(sensitive_keywords: Rails.application.config.filter_parameters)`.
-   - provide custom filter object, which responds to `call` method and takes 2 arguments: attribute name and its value and performs mutation by using `gsub!` (don't worry, the entire body is cloned before passing it to the filter, so nothing unexpected will happen). This is compatible with the interface of `Rails.application.config.filter_parameters` when you use a custom filter there. In such case, you can do something like this: `Rails.application.config.filter_parameters = [Proc.new { |k, v| do_something_custom_here(k, v) }]` and then just assign `Rails.application.config.filter_parameters.first` in the Hermes config.  
+   - provide custom filter object, which responds to `call` method and takes 2 arguments: attribute name and its value and performs mutation by using `gsub!` (don't worry, the entire body is cloned before passing it to the filter, so nothing unexpected will happen). This is compatible with the interface of `Rails.application.config.filter_parameters` when you use a custom filter there. In such case, you can do something like this: `Rails.application.config.filter_parameters = [Proc.new { |k, v| do_something_custom_here(k, v) }]` and then just assign `Rails.application.config.filter_parameters.first` in the Hermes config.
 ## RPC
 
 If you want to handle RPC call, you need to add `rpc: true` flag. Keep in mind that RPC requires a synchronous processing and response, so you also need to set `async: false`. The routing key and correlation ID will be resolved based on the message that is published by the client. The payload that is sent back will be what event handler reutrns, so it might be a good idea to just return a hash so that you can operate on JSON easily.
@@ -483,7 +483,7 @@ curl -v localhost:3000/health_check/hermes.json
 2. Via binary:
 
 ```
-bin/hermes_health_check
+bundle exec hermes_health_check
 ```
 
 ## CircleCI config for installing RabbitMQ
