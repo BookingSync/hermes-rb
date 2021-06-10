@@ -2,7 +2,7 @@ module Hermes
   class Logger
     class ParamsFilter
       SENSITIVE_ATTRIBUTES_KEYWORDS = %w(token password credit_card card_number security_code verification_value
-        private_key signature api_key secret_key publishable_key).freeze
+        private_key signature api_key secret_key publishable_key client_key client_secret secret).freeze
       STRIPPED_VALUE = "[STRIPPED]".freeze
 
       private_constant :SENSITIVE_ATTRIBUTES_KEYWORDS, :STRIPPED_VALUE

@@ -2,6 +2,9 @@
 
 ## Master
 
+## 0.6.1
+- Extend the list of sensitive keywords for Hermes::Logger::ParamsFilter
+
 ## 0.6.0
 - Add Health check
 
