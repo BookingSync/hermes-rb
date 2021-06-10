@@ -88,6 +88,24 @@ RSpec.describe Hermes::Logger::ParamsFilter do
           it { is_expected_block.to change { value }.from("value").to("[STRIPPED]") }
         end
 
+        describe "for attributes containing 'client_key' word" do
+          let(:attribute) { :client_key }
+
+          it { is_expected_block.to change { value }.from("value").to("[STRIPPED]") }
+        end
+
+        describe "for attributes containing 'client_secret' word" do
+          let(:attribute) { :client_secret }
+
+          it { is_expected_block.to change { value }.from("value").to("[STRIPPED]") }
+        end
+
+        describe "for attributes containing 'secret' word" do
+          let(:attribute) { :secret }
+
+          it { is_expected_block.to change { value }.from("value").to("[STRIPPED]") }
+        end
+
         describe "for other attributes" do
           let(:attribute) { :currency }
 
