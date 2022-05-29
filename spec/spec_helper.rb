@@ -13,6 +13,11 @@ RSpec.configure do |config|
   # Disable RSpec exposing methods globally on `Module` and `main`
   config.disable_monkey_patching!
 
+  config.run_all_when_everything_filtered = true
+  config.filter_run focus: true
+
+  config.mock_with :rspec
+
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
@@ -57,37 +62,37 @@ RSpec.configure do |config|
     Hermes.origin_headers = {}
   end
 
-  database_name = "hermes-rb-test"
-  ENV["DISTRIBUTED_TRACING_DATABASE_URI"] ||= "postgresql://localhost/#{database_name}"
+  ENV["DATABASE_URL"] ||= "postgresql://localhost/hermes-rb-test"
+  ENV["DISTRIBUTED_TRACING_DATABASE_URI"] ||= ENV["DATABASE_URI"]
 
-  ActiveRecord::Base.establish_connection(adapter: "postgresql", database: database_name)
-  begin
-    database = ActiveRecord::Base.connection
-  rescue ActiveRecord::NoDatabaseError
-    ActiveRecord::Base.establish_connection(adapter: "postgresql").connection.create_database(database_name)
-    ActiveRecord::Base.establish_connection(adapter: "postgresql", database: database_name)
-    database = ActiveRecord::Base.connection
+  if Gem::Version.new(ActiveRecord::VERSION::STRING) > Gem::Version.new('6')
+    # Rails 5.2 is unable to handle this
+    ActiveRecord::Tasks::DatabaseTasks.create(ENV["DATABASE_URL"])
   end
 
-  database.drop_table(:hermes_distributed_traces) if database.table_exists?(:hermes_distributed_traces)
-  database.create_table(:hermes_distributed_traces) do |t|
-    t.string "trace", null: false
-    t.string "span", null: false
-    t.string "parent_span"
-    t.string "service", null: false
-    t.text "event_class", null: false
-    t.text "routing_key", null: false
-    t.jsonb "event_body", null: false, default: []
-    t.jsonb "event_headers", null: false, default: []
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+  ActiveRecord::Base.establish_connection(ENV["DATABASE_URL"])
 
-    t.index ["created_at"], name: "index_hermes_distributed_traces_on_created_at", using: :brin
-    t.index ["trace"], name: "index_hermes_distributed_traces_on_trace"
-    t.index ["span"], name: "index_hermes_distributed_traces_on_span"
-    t.index ["service"], name: "index_hermes_distributed_traces_on_service"
-    t.index ["event_class"], name: "index_hermes_distributed_traces_on_event_class"
-    t.index ["routing_key"], name: "index_hermes_distributed_traces_on_routing_key"
+  ActiveRecord::Schema.define do
+    drop_table(:hermes_distributed_traces, if_exists: true)
+    create_table(:hermes_distributed_traces) do |t|
+      t.string "trace", null: false
+      t.string "span", null: false
+      t.string "parent_span"
+      t.string "service", null: false
+      t.text "event_class", null: false
+      t.text "routing_key", null: false
+      t.jsonb "event_body", null: false, default: []
+      t.jsonb "event_headers", null: false, default: []
+      t.datetime "created_at", precision: 6, null: false
+      t.datetime "updated_at", precision: 6, null: false
+
+      t.index ["created_at"], name: "index_hermes_distributed_traces_on_created_at", using: :brin
+      t.index ["trace"], name: "index_hermes_distributed_traces_on_trace"
+      t.index ["span"], name: "index_hermes_distributed_traces_on_span"
+      t.index ["service"], name: "index_hermes_distributed_traces_on_service"
+      t.index ["event_class"], name: "index_hermes_distributed_traces_on_event_class"
+      t.index ["routing_key"], name: "index_hermes_distributed_traces_on_routing_key"
+    end
   end
 
   config.before(:each) do

@@ -11,9 +11,13 @@ module Hermes
       end
 
       def handle(message)
-        tracer = ::Datadog.respond_to?(:tracer) ? ::Datadog.tracer : Datadog::Tracing
+        tracer = ::Datadog.respond_to?(:tracer) ? ::Datadog.tracer : "Datadog::Tracing".safe_constantize
 
-        tracer.trace(klass.class.name, service: "hermes", span_type: "rabbitmq") do
+        tracer.trace(
+          klass.class.name || klass.class.to_s,
+          service: "hermes",
+          span_type: "rabbitmq"
+        ) do
           klass.process(message)
         end
       end
