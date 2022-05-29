@@ -1,8 +1,14 @@
 ---
 language: ruby
 cache: bundler
-rvm:
-  - 2.7.2
+matrix:
+  include:
+    - rvm: 2.7.2
+      gemfile: gemfiles/rails.5.2.gemfile
+    - rvm: 3.0.4
+      gemfile: gemfiles/rails.6.1.gemfile
+    - rvm: 3.1.2
+      gemfile: gemfiles/rails.7.0.gemfile
 env:
   - HUTCH_URI="amqp://guest:guest@localhost:5672"
   - HUTCH_ENABLE_HTTP_API_USE=false

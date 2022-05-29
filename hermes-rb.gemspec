@@ -42,4 +42,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pg"
   spec.add_development_dependency "newrelic_rpm"
   spec.add_development_dependency "ddtrace"
+  spec.add_development_dependency "appraisal"
 end
