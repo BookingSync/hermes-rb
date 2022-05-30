@@ -2,6 +2,9 @@
 
 ## Master
 
+## 0.7.0
+- Add support for DDTrace v1
+
 ## 0.6.1
 - Extend the list of sensitive keywords for Hermes::Logger::ParamsFilter
 
