@@ -1,0 +1,43 @@
+name: CI
+on: [pull_request]
+jobs:
+  rspec:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { ruby: '2.7', rails: '5.2' }
+          - { ruby: '3.0', rails: '6.1' }
+          - { ruby: '3.1', rails: '7.0' }
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/gemfiles/rails.${{ matrix.rails }}.gemfile
+      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/hermes-rb-test"
+      DISTRIBUTED_TRACING_DATABASE_URI: "postgresql://postgres:postgres@127.0.0.1:5432/hermes-rb-test"
+      HUTCH_URI: "amqp://guest:guest@127.0.0.1:5672"
+      HUTCH_ENABLE_HTTP_API_USE: false
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hermes-rb-test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      rabbitmq:
+        image: rabbitmq
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
+        options: --health-cmd "rabbitmqctl node_health_check" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - run: bundle exec rspec
