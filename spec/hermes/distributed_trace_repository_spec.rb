@@ -8,6 +8,7 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
     end
     class Events::Payment::Created < Hermes::BaseEvent
       attribute :payment_id, Types::Strict::Integer
+      attribute :secret, Types::Strict::String
     end
 
     let(:repository) do
@@ -22,7 +23,7 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
       double(:config, store_distributed_traces?: store_distributed_traces)
     end
     let(:event) do
-      Events::Payment::Created.new(payment_id: 1).tap do |current_event|
+      Events::Payment::Created.new(payment_id: 1, secret: "secret").tap do |current_event|
         current_event.origin_headers = { "X-B3-SpanId" => "parent-span-123" }
       end
     end
@@ -36,11 +37,7 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
       end.new
     end
     let(:distributes_tracing_mapper) do
-      Class.new do
-        def call(attributes)
-          attributes.merge("extra_attribute" => "from_mapper")
-        end
-      end.new
+      Hermes::DistributedTrace::Mapper.new
     end
     let(:database_error_handler) do
       Hermes::DatabaseErrorHandler.new(error_notification_service: error_notification_service)
@@ -69,15 +66,14 @@ RSpec.describe Hermes::DistributedTraceRepository, :with_application_prefix do
           service: "app_prefix",
           event_class: "Events::Payment::Created",
           routing_key: "payment.created",
-          event_body: { "payment_id" => 1 },
+          event_body: { "payment_id" => 1, "secret" => "[STRIPPED]" },
           event_headers: {
             "X-B3-TraceId" => "c1b84b37d8a8aa78dc04536c321c1af05a57a57ff4b45e6598da22acc345fcb6",
             "X-B3-ParentSpanId" => "parent-span-123",
             "X-B3-SpanId" => "c1b84b37d8a8aa78;app_prefix;c288d2c7-6903-4825-8aec-c3fcc2aa0045",
             "X-B3-Sampled"=> "",
             "service"=>"app_prefix"
-          },
-          "extra_attribute" => "from_mapper"
+          }
         }
       end
 
