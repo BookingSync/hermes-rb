@@ -2,6 +2,9 @@
 
 ## Master
 
+## 0.7.1
+- Fix Hermes::DistributedTraceRepository so that it properly applies mapper that modifies event body
+
 ## 0.7.0
 - Add support for DDTrace v1
 
