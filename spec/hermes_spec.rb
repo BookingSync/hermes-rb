@@ -65,4 +65,42 @@ RSpec.describe Hermes do
 
     it { is_expected_block.to change { described_class.origin_headers }.from({}).to(headers) }
   end
+
+  describe ".with_origin_headers" do
+    subject(:with_origin_headers) { described_class.with_origin_headers(headers) { "value" } }
+
+    let(:headers) do
+      {
+        header: "value"
+      }
+    end
+
+    before do
+      allow(Hermes).to receive(:origin_headers=).and_call_original
+      allow(Hermes).to receive(:clear_origin_headers).and_call_original
+    end
+
+    it "temporarily assigns origin_headers and returns original value" do
+      expect(with_origin_headers).to eq "value"
+
+      expect(Hermes).to have_received(:origin_headers=).with(headers)
+      expect(Hermes).to have_received(:clear_origin_headers)
+    end
+  end
+
+  describe ".clear_origin_headers" do
+    subject(:clear_origin_headers) { described_class.clear_origin_headers }
+
+    let(:headers) do
+      {
+        header: "value"
+      }
+    end
+
+    before do
+      described_class.origin_headers = headers
+    end
+
+    it { is_expected_block.to change { described_class.origin_headers }.from(headers).to({}) }
+  end
 end

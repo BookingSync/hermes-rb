@@ -50,6 +50,16 @@ module Hermes
   def self.origin_headers=(headers)
     DependenciesContainer["global_store"][ORIGIN_HEADERS_KEY] = headers.to_h
   end
+
+  def self.clear_origin_headers
+    DependenciesContainer["global_store"].delete(ORIGIN_HEADERS_KEY)
+  end
+
+  def self.with_origin_headers(headers)
+    self.origin_headers = headers
+
+    yield.tap { clear_origin_headers }
+  end
 end
 
 require "hermes/distributed_trace"
