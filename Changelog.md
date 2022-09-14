@@ -1,6 +1,7 @@
 # Changelog
 
 ## Master
+- Clear Hermes.origin_headers after calling event handlers
 
 ## 0.7.1
 - Fix Hermes::DistributedTraceRepository so that it properly applies mapper that modifies event body

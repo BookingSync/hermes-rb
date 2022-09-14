@@ -19,12 +19,13 @@ module Hermes
 
     def call(event_class, body, headers)
       event = Object.const_get(event_class).from_body_and_headers(body, headers)
-      Hermes.origin_headers = headers
 
-      instrumenter.instrument("Hermes.EventProcessor.#{event_class}") do
-        response = infer_handler(event_class).call(event)
-        distributed_trace_repository.create(event)
-        ProcessingResult.new(event, response)
+      Hermes.with_origin_headers(headers) do
+        instrumenter.instrument("Hermes.EventProcessor.#{event_class}") do
+          response = infer_handler(event_class).call(event)
+          distributed_trace_repository.create(event)
+          ProcessingResult.new(event, response)
+        end
       end
     end
 

@@ -36,6 +36,9 @@ RSpec.describe Hermes::EventProcessor, :with_application_prefix do
       event_handler.handle_events do
         handle EventClassForTestingAsyncMessagingEventProcessor, with: HandlerForEventClassForTestingAsyncMessagingEventProcessor
       end
+
+      allow(Hermes).to receive(:origin_headers=).and_call_original
+      allow(Hermes).to receive(:clear_origin_headers).and_call_original
     end
 
     around do |example|
@@ -85,10 +88,17 @@ RSpec.describe Hermes::EventProcessor, :with_application_prefix do
       expect(Hermes::DistributedTrace.last.event_class).to eq "EventClassForTestingAsyncMessagingEventProcessor"
     end
 
-    it "assigns origin headers to Hermes" do
+    it "temporarily assigns origin_headers" do
+      call
+
+      expect(Hermes).to have_received(:origin_headers=).with(headers)
+      expect(Hermes).to have_received(:clear_origin_headers)
+    end
+
+    it "clears origin headers afterward" do
       expect {
         call
-      }.to change { Hermes.origin_headers }.from({}).to(headers)
+      }.not_to change { Hermes.origin_headers }
     end
   end
 end
