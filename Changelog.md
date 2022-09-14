@@ -1,6 +1,8 @@
 # Changelog
 
 ## Master
+
+## 0.7.2
 - Clear Hermes.origin_headers after calling event handlers
 
 ## 0.7.1

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hermes-rb (0.7.1)
+    hermes-rb (0.7.2)
       activerecord (>= 5)
       activesupport (>= 5)
       dry-container (~> 0)
@@ -12,12 +12,12 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activemodel (7.0.3.1)
-      activesupport (= 7.0.3.1)
-    activerecord (7.0.3.1)
-      activemodel (= 7.0.3.1)
-      activesupport (= 7.0.3.1)
-    activesupport (7.0.3.1)
+    activemodel (7.0.4)
+      activesupport (= 7.0.4)
+    activerecord (7.0.4)
+      activemodel (= 7.0.4)
+      activesupport (= 7.0.4)
+    activesupport (7.0.4)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
@@ -36,9 +36,9 @@ GEM
     ddtrace (0.45.0)
       msgpack
     diff-lcs (1.4.4)
-    dry-container (0.10.0)
+    dry-container (0.10.1)
       concurrent-ruby (~> 1.0)
-    dry-core (0.8.0)
+    dry-core (0.8.1)
       concurrent-ruby (~> 1.0)
     dry-inflector (0.3.0)
     dry-logic (1.2.0)
@@ -63,12 +63,12 @@ GEM
       concurrent-ruby (~> 1.0)
     ice_nine (0.11.2)
     json (2.6.2)
-    minitest (5.16.2)
+    minitest (5.16.3)
     msgpack (1.4.2)
     multi_json (1.15.0)
     newrelic_rpm (6.15.0)
     pg (1.2.3)
-    rack (2.2.4)
+    rack (3.0.0)
     rake (13.0.1)
     rbtree (0.4.5)
     request_store (1.5.1)
@@ -86,13 +86,13 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.10.0)
     rspec-support (3.10.0)
-    set (1.0.2)
+    set (1.0.3)
     sorted_set (1.0.3)
       rbtree
       set (~> 1.0)
     thor (1.2.1)
     timecop (0.9.2)
-    tzinfo (2.0.4)
+    tzinfo (2.0.5)
       concurrent-ruby (~> 1.0)
     vcr (5.0.0)
 
