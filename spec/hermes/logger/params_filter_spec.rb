@@ -1,3 +1,5 @@
+require "spec_helper"
+
 RSpec.describe Hermes::Logger::ParamsFilter do
   describe "#call" do
     context "with default config for initialization" do
@@ -117,13 +119,25 @@ RSpec.describe Hermes::Logger::ParamsFilter do
     context "with custom config for initialization" do
       subject(:call) { params_filter.call(attribute, value) }
 
-      let(:params_filter) { described_class.new(sensitive_keywords: %i(magic_attribute), stripped_value: "[removed]") }
+      let(:params_filter) { described_class.new(sensitive_keywords: [:magic_attribute, /^space$/], stripped_value: "[removed]") }
       let(:value) { "value" }
 
-      describe "for attributes containing 'publishable_key' word" do
+      describe "for 'magic_attribute' word" do
         let(:attribute) { :magic_attribute }
 
         it { is_expected_block.to change { value }.from("value").to("[removed]") }
+      end
+
+      describe "for 'space' word" do
+        let(:attribute) { :space }
+
+        it { is_expected_block.to change { value }.from("value").to("[removed]") }
+      end
+
+      describe "for 'namespace' word" do
+        let(:attribute) { :namespace }
+
+        it { is_expected_block.not_to change { value } }
       end
 
       describe "for other attributes" do
