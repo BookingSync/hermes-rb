@@ -2,6 +2,8 @@
 
 ## Master
 
+- Improve test coverage of `Hermes::Logger::ParamsFilter` - cover regular expressions
+
 ## 0.7.2
 - Clear Hermes.origin_headers after calling event handlers
 
