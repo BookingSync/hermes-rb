@@ -16,6 +16,7 @@ jobs:
       DISTRIBUTED_TRACING_DATABASE_URI: "postgresql://postgres:postgres@127.0.0.1:5432/hermes-rb-test"
       HUTCH_URI: "amqp://guest:guest@127.0.0.1:5672"
       HUTCH_ENABLE_HTTP_API_USE: false
+      DD_PROFILING_NO_EXTENSION: true
     services:
       postgres:
         image: postgres:14
