@@ -614,4 +614,22 @@ RSpec.describe Hermes::Configuration do
       it { is_expected.to be_instance_of Hermes::Logger::ParamsFilter }
     end
   end
+
+  describe "database_connection_provider" do
+    subject(:database_connection_provider) { configuration.database_connection_provider }
+
+    let(:configuration) { described_class.new }
+
+    context "when database_connection_provider is set" do
+      before do
+        configuration.database_connection_provider = "database_connection_provider"
+      end
+
+      it { is_expected.to eq "database_connection_provider" }
+    end
+
+    context "when database_connection_provider is not set" do
+      it { is_expected.to eq nil }
+    end
+  end
 end

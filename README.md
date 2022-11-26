@@ -30,6 +30,7 @@ Rails.application.config.to_prepare do
     config.adapter = Rails.application.config.async_messaging_adapter
     config.application_prefix = "my_app"
     config.background_processor = HermesHandlerJob
+    config.database_connection_provider = ActiveRecord::Base.connection
     config.enqueue_method = :perform_async
     config.event_handler = event_handler
     config.clock = Time.zone
