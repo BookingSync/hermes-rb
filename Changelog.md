@@ -2,6 +2,8 @@
 
 ## Master
 
+## 0.7.3
+
 - Handle database reconnection in synchronous flow
 - Improve test coverage of `Hermes::Logger::ParamsFilter` - cover regular expressions
 
