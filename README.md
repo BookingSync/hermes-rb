@@ -30,6 +30,7 @@ Rails.application.config.to_prepare do
     config.adapter = Rails.application.config.async_messaging_adapter
     config.application_prefix = "my_app"
     config.background_processor = HermesHandlerJob
+    config.database_connection_provider = ActiveRecord::Base.connection
     config.enqueue_method = :perform_async
     config.event_handler = event_handler
     config.clock = Time.zone
@@ -87,14 +88,15 @@ end
 
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
 
-5. `event_handler` - an instance of event handler/storage, just use what is shown in the example. Notice that you can also pass extra consumer config lambda that will be evaluated within the context of Hutch consumer.
-6. `clock` - a clock object that is time-zone aware, implementing `now` method.
-7. `configure_hutch` - a way to configure Hutch:
+5. `database_connection_provider` - an object responding to `reconnect!`. It is used during synchronous flow to ensure a valid connection. Optional.
+6. `event_handler` - an instance of event handler/storage, just use what is shown in the example. Notice that you can also pass extra consumer config lambda that will be evaluated within the context of Hutch consumer.
+7. `clock` - a clock object that is time-zone aware, implementing `now` method.
+8. `configure_hutch` - a way to configure Hutch:
    - `uri` - the URI for RabbitMQ, required.
    - `force_publisher_confirms` - defaults to `true`
    - `enable_http_api_use` - defaults to `false`
    - `tracer` - defaults to `Hermes::Tracers::Datadog` if you use Datadog, `Hutch::Tracers::NewRelic` for NewRelic and `Hutch::Tracers::NullTracer` if you use neither Datadog, nor NewRelic. Check APM section for more details if you want to provide a custom tracer.
-8. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
+9. `event_handler.handle_events` - that's how you declare events and their handlers. The event handler is an object that responds to `call` method and takes `event` as an argument. All events should ideally be subclasses of `Hermes::BaseEvent`
 
 This class inherits from `Dry::Struct`, so getting familiar with [dry-struct gem](https://dry-rb.org/gems/dry-struct/) would be beneficial. Here is an example event:
 
@@ -122,9 +124,9 @@ To avoid unexpected problems, don't use restricted names for attribtes such as `
 
 You can also specify whether the event should be processed asynchronously using `background_processor` (default behavior) or synchronously. If you want the event to be processed synchronously, e.g. when doing RPC, use `async: false` option.
 
-9. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later). Optional.
+10. `rpc_call_timeout` - a timeout for RPC calls, defaults to 10 seconds. Can be also customized per instance of RPC Client (covered later). Optional.
 
-10. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
+11. `instrumenter` - instrumenter object responding to `instrument` method taking one string argument, one optional hash argument and a block.
 
 For example:
 
@@ -144,21 +146,21 @@ end
 
 If you don't care about it, you can leave it empty.
 
-11. `distributed_tracing_database_uri` - If you want to enable distributed tracing, specify Postgres database URI. Optional.
+12. `distributed_tracing_database_uri` - If you want to enable distributed tracing, specify Postgres database URI. Optional.
 
-12. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`. Optional.
+13. `distributed_tracing_database_table` - Table name for storing traces, by default it's `hermes_distributed_traces`. Optional.
 
-13. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) which must return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. It defaults to `Hermes::DistributedTrace::Mapper`, which uses `logger_params_filter` to remove sensitive info (this config option is covered below). You can either provide a custom mapper or pass a custom params filter, for example: `Hermes::DistributedTrace::Mapper.new(params_filter: custom_params_filter)`
+14. `distributes_tracing_mapper` - an object responding to `call` method taking one argument (a hash of attributes) which must return a hash as well. This hash will be used for assigning attributes when creating `Hermes::DistributedTrace`. It defaults to `Hermes::DistributedTrace::Mapper`, which uses `logger_params_filter` to remove sensitive info (this config option is covered below). You can either provide a custom mapper or pass a custom params filter, for example: `Hermes::DistributedTrace::Mapper.new(params_filter: custom_params_filter)`
 
-14. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
+15. `error_notification_service` - an object responding to `capture_exception` method taking one argument (error). Its interface is based on `Raven` from [Sentry Raven](https://github.com/getsentry/sentry-ruby/tree/master/sentry-raven). By default `Hermes::NullErrorNotificationService` is used, which does nothing. Optional.
 
-15. `database_error_handler` - `an object responding to `call` method taking one argument (error). Used when storing distributed traces. By default it uses `Hermes::DatabaseErrorHandler` which depends on `error_notification_service`, so in most cases, you will probably want to just configure `error_notification_service`. Optional.
+16. `database_error_handler` - `an object responding to `call` method taking one argument (error). Used when storing distributed traces. By default it uses `Hermes::DatabaseErrorHandler` which depends on `error_notification_service`, so in most cases, you will probably want to just configure `error_notification_service`. Optional.
 
-16. `enable_safe_producer` - a method requiring a job class implementing `enqueue` method that will be responsible for retrying delivery of the event later in case it fails. Check `Safe Event Producer` section for more details.
+17. `enable_safe_producer` - a method requiring a job class implementing `enqueue` method that will be responsible for retrying delivery of the event later in case it fails. Check `Safe Event Producer` section for more details.
 
-17. `producer_retryable` - used when `safe_producer` was enabled via (`enable_safe_producer`). By default, it is a method retrying delivery 3 times rescuing from `StandardError` each time. The object responsible for this behavior by default is: `Hermes::Retryable.new(times: 3, errors: [StandardError])`.
+18. `producer_retryable` - used when `safe_producer` was enabled via (`enable_safe_producer`). By default, it is a method retrying delivery 3 times rescuing from `StandardError` each time. The object responsible for this behavior by default is: `Hermes::Retryable.new(times: 3, errors: [StandardError])`.
 
-18. `logger_params_filter` - a service used as params filter for logger, to make sure no sensitive data will be logged. It defaults to `Hermes::Logger::ParamsFilter` which already performs some filtering but it might not be enough in your case. If you are not satisfied with the defaults, you have 2 options, which are especially simple in Rails apps:
+19. `logger_params_filter` - a service used as params filter for logger, to make sure no sensitive data will be logged. It defaults to `Hermes::Logger::ParamsFilter` which already performs some filtering but it might not be enough in your case. If you are not satisfied with the defaults, you have 2 options, which are especially simple in Rails apps:
    - provide custom array of sensitive attributes and still use a default filter: `Hermes::Logger::ParamsFilter.new(sensitive_keywords: Rails.application.config.filter_parameters)`.
    - provide custom filter object, which responds to `call` method and takes 2 arguments: attribute name and its value and performs mutation by using `gsub!` (don't worry, the entire body is cloned before passing it to the filter, so nothing unexpected will happen). This is compatible with the interface of `Rails.application.config.filter_parameters` when you use a custom filter there. In such case, you can do something like this: `Rails.application.config.filter_parameters = [Proc.new { |k, v| do_something_custom_here(k, v) }]` and then just assign `Rails.application.config.filter_parameters.first` in the Hermes config.
 ## RPC

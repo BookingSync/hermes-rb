@@ -25,6 +25,7 @@ module Hermes
               config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
               logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
+              ensure_database_connection!
               result = event_processor.call(event_class.to_s, body, headers)
               event = result.event
               response = result.response
@@ -57,6 +58,10 @@ module Hermes
 
         def event_processor
           Hermes::DependenciesContainer["event_processor"]
+        end
+
+        def ensure_database_connection!
+          config.database_connection_provider.reconnect! if config.database_connection_provider
         end
       end
 
