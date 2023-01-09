@@ -30,6 +30,12 @@ RSpec.describe Hermes::Logger::ParamsFilter do
           it { is_expected_block.to change { value }.from("value").to("[STRIPPED]") }
         end
 
+        describe "for attributes containing 'TOKEN' word to test case-insensitive matches" do
+          let(:attribute) { "ACCESS_TOKEN" }
+
+          it { is_expected_block.to change { value }.from("value").to("[STRIPPED]") }
+        end
+
         describe "for attributes containing 'password' word" do
           let(:attribute) { :password_confirmation }
 
