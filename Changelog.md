@@ -2,6 +2,8 @@
 
 ## Master
 
+## 0.7.4
+
 - Make `Hermes::Logger::ParamsFilter` handle case-insensitive matches
 
 ## 0.7.3
