@@ -2,6 +2,8 @@
 
 ## Master
 
+- Make `Hermes::Logger::ParamsFilter` handle case-insensitive matches
+
 ## 0.7.3
 
 - Handle database reconnection in synchronous flow
