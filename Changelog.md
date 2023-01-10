@@ -2,6 +2,8 @@
 
 ## Master
 
+- Make `Hermes::Logger::ParamsFilter` correctly handle regexps
+
 ## 0.7.4
 
 - Make `Hermes::Logger::ParamsFilter` handle case-insensitive matches
