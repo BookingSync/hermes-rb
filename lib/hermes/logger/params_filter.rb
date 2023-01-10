@@ -11,13 +11,23 @@ module Hermes
       private     :sensitive_keywords, :stripped_value
 
       def initialize(sensitive_keywords: SENSITIVE_ATTRIBUTES_KEYWORDS, stripped_value: STRIPPED_VALUE)
-        @sensitive_keywords = sensitive_keywords.map(&:to_s)
+        @sensitive_keywords = sensitive_keywords
         @stripped_value = stripped_value
       end
 
       def call(attribute, value)
-        if sensitive_keywords.any? { |sensitive_attribute| attribute.to_s.downcase.match(sensitive_attribute.to_s.downcase) } && value.respond_to?(:to_str)
+        if sensitive_keywords.any? { |sensitive_attribute| match?(sensitive_attribute, attribute) } && value.respond_to?(:to_str)
           value.gsub!(value, stripped_value)
+        end
+      end
+
+      private
+
+      def match?(sensitive_attribute, attribute)
+        if Regexp === sensitive_attribute
+          attribute.to_s.match(sensitive_attribute)
+        else
+          attribute.to_s.downcase.match(sensitive_attribute.to_s.downcase)
         end
       end
     end

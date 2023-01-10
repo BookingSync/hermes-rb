@@ -125,7 +125,7 @@ RSpec.describe Hermes::Logger::ParamsFilter do
     context "with custom config for initialization" do
       subject(:call) { params_filter.call(attribute, value) }
 
-      let(:params_filter) { described_class.new(sensitive_keywords: [:magic_attribute, /^space$/], stripped_value: "[removed]") }
+      let(:params_filter) { described_class.new(sensitive_keywords: [:magic_attribute, /^space$/, /ABC/, %r{\Az?ip\z}], stripped_value: "[removed]") }
       let(:value) { "value" }
 
       describe "for 'magic_attribute' word" do
@@ -150,6 +150,32 @@ RSpec.describe Hermes::Logger::ParamsFilter do
         let(:attribute) { :password }
 
         it { is_expected_block.not_to change { value } }
+      end
+
+      describe "for ip regexp" do
+        let(:attribute) { :ip }
+
+        it { is_expected_block.to change { value }.from("value").to("[removed]") }
+      end
+
+      describe "for zip regexp" do
+        let(:attribute) { :zip }
+
+        it { is_expected_block.to change { value }.from("value").to("[removed]") }
+      end
+
+      describe "for ABC regexp" do
+        context "when attribute is ABC" do
+          let(:attribute) { :ABC }
+
+          it { is_expected_block.to change { value }.from("value").to("[removed]") }
+        end
+
+        context "when attribute is abc" do
+          let(:attribute) { :abc }
+
+          it { is_expected_block.not_to change { value } }
+        end
       end
     end
   end
