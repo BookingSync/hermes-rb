@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hermes-rb (0.7.4)
+    hermes-rb (0.7.5)
       activerecord (>= 5)
       activesupport (>= 5)
       dry-container (~> 0)
