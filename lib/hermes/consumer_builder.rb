@@ -61,7 +61,7 @@ module Hermes
         end
 
         def ensure_database_connection!
-          config.database_connection_provider.reconnect! if config.database_connection_provider
+          config.database_connection_provider.connection.reconnect! if config.database_connection_provider
         end
       end
 

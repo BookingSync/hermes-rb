@@ -30,7 +30,7 @@ Rails.application.config.to_prepare do
     config.adapter = Rails.application.config.async_messaging_adapter
     config.application_prefix = "my_app"
     config.background_processor = HermesHandlerJob
-    config.database_connection_provider = ActiveRecord::Base.connection
+    config.database_connection_provider = ActiveRecord::Base
     config.enqueue_method = :perform_async
     config.event_handler = event_handler
     config.clock = Time.zone
@@ -88,7 +88,7 @@ end
 
 If you know what you are doing, you don't necessarily have to process things in the background. As long as the class implements the expected interface, you can do anything you want.
 
-5. `database_connection_provider` - an object responding to `reconnect!`. It is used during synchronous flow to ensure a valid connection. Optional.
+5. `database_connection_provider` - an object responding to `connection`. It is used during synchronous flow to ensure a valid connection. Optional.
 6. `event_handler` - an instance of event handler/storage, just use what is shown in the example. Notice that you can also pass extra consumer config lambda that will be evaluated within the context of Hutch consumer.
 7. `clock` - a clock object that is time-zone aware, implementing `now` method.
 8. `configure_hutch` - a way to configure Hutch:
