@@ -2,6 +2,8 @@
 
 ## Master
 
+- Fix `database_connection_provider` config option: avoid calling connection on app initialization
+
 ## 0.7.5
 
 - Make `Hermes::Logger::ParamsFilter` correctly handle regexps
