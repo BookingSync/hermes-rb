@@ -295,6 +295,9 @@ end
 Put this inside `rails_helper`. Note that it requires `webmock` and `sidekiq`.
 
 ``` rb
+  # This line is needed if you use `database_connection_provider`, otherwise `shared_connection` will be reloaded.
+  Hermes.configuration.database_connection_provider = nil
+
   def execute_jobs_inline
     original_active_job_adapter = ActiveJob::Base.queue_adapter
     ActiveJob::Base.queue_adapter = :inline
