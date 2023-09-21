@@ -2,6 +2,8 @@
 
 ## Master
 
+- Ensure proper connection to Distributed Tracing DB by reconnecting
+
 ## 0.8.0
 
 - Fix `database_connection_provider` config option: avoid calling connection on app initialization
