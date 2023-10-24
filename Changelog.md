@@ -2,7 +2,8 @@
 
 ## Master
 
-- Ensure proper connection to Distributed Tracing DB by reconnecting
+## 0.9.0
+- Handle database reconnection for distributed traces as it might cause some issues with RPCs/synchronous flows
 
 ## 0.8.0
 
