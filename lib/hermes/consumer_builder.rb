@@ -62,6 +62,7 @@ module Hermes
 
         def ensure_database_connection!
           config.database_connection_provider.connection.reconnect! if config.database_connection_provider
+          Hermes::DistributedTrace.connection.reconnect! if config.store_distributed_traces?
         end
       end
 
