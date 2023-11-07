@@ -107,6 +107,7 @@ RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
       original_logger = Hutch::Logging.logger
       original_clock = configuration.clock
       original_distributed_tracing_database_uri = configuration.distributed_tracing_database_uri
+      original_database_connection_provider = configuration.database_connection_provider
 
       Hermes.configure do |config|
         config.application_prefix = "app_prefix"
@@ -115,6 +116,7 @@ RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
         config.event_handler = event_handler
         config.clock = dummy_clock
         config.distributed_tracing_database_uri = ENV["DISTRIBUTED_TRACING_DATABASE_URI"]
+        config.database_connection_provider = ActiveRecord::Base
       end
       Hutch::Logging.logger = dummy_logger
 
@@ -127,6 +129,7 @@ RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
         config.event_handler = original_event_handler
         config.clock = original_clock
         config.distributed_tracing_database_uri = original_distributed_tracing_database_uri
+        config.database_connection_provider = original_database_connection_provider
       end
       Hutch::Logging.logger = original_logger
     end
@@ -248,6 +251,67 @@ RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
             expect(configuration.instrumenter).to receive(:instrument).with("Hermes.Consumer.process")
 
             process
+          end
+
+          context "when error is raised during processing" do
+            context "when the error is related to Postgres server closing the connection" do
+              context "when the database connection provider is configured and distributed traces are supposed to be stored" do
+                let(:error_message) { "PG::ConnectionBad: PQsocket() can't get socket descriptor" }
+
+                before do
+                  allow(configuration.database_connection_provider.connection_pool).to receive(:disconnect!).and_call_original
+                  allow(Hermes::DistributedTrace.connection_pool).to receive(:disconnect!).and_call_original
+
+                  allow(Hermes::DependenciesContainer["event_processor"]).to receive(:call)
+                    .and_raise(ActiveRecord::StatementInvalid.new(error_message))
+                end
+
+                it { is_expected_block.to raise_error(ActiveRecord::StatementInvalid, error_message) }
+
+                it "releases DB connections" do
+                  process rescue ActiveRecord::StatementInvalid
+
+                  expect(configuration.database_connection_provider.connection_pool).to have_received(:disconnect!)
+                  expect(Hermes::DistributedTrace.connection_pool).to have_received(:disconnect!)
+                end
+              end
+
+              context "when the database connection provider is not configured and distributed traces are not supposed to be stored" do
+                let(:error_message) { "PG::ConnectionBad: PQsocket() can't get socket descriptor" }
+
+                before do
+                  allow(Hermes.configuration).to receive(:database_connection_provider).and_return(nil)
+                  allow(Hermes.configuration).to receive(:store_distributed_traces?).and_return(false)
+
+                  allow(Hermes::DependenciesContainer["event_processor"]).to receive(:call)
+                    .and_raise(ActiveRecord::StatementInvalid.new(error_message))
+                end
+
+                it "does not attempt to release any connections and blows up with the original error" do
+                  expect {
+                    process
+                  }.to raise_error ActiveRecord::StatementInvalid, error_message
+                end
+              end
+            end
+
+            context "when the error is not related to Postgres server closing the connection" do
+              before do
+                allow(configuration.database_connection_provider.connection_pool).to receive(:disconnect!).and_call_original
+                allow(Hermes::DistributedTrace.connection_pool).to receive(:disconnect!).and_call_original
+
+                allow(Hermes::DependenciesContainer["event_processor"]).to receive(:call).and_raise(StandardError.new("some error"))
+              end
+
+              it { is_expected_block.to raise_error(StandardError, "some error") }
+
+              it "does not release any connections" do
+                process rescue StandardError
+
+                expect(configuration.database_connection_provider.connection_pool).not_to have_received(:disconnect!)
+                expect(Hermes::DistributedTrace.connection_pool).not_to have_received(:disconnect!)
+              end
+            end
           end
         end
       end

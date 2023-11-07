@@ -1,6 +1,7 @@
 # Changelog
 
 ## Master
+- Improve handling database connections when the server kills the connection
 
 ## 0.9.0
 - Handle database reconnection for distributed traces as it might cause some issues with RPCs/synchronous flows
