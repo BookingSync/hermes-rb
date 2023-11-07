@@ -271,8 +271,8 @@ RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
                 it "releases DB connections" do
                   process rescue ActiveRecord::StatementInvalid
 
-                  expect(configuration.database_connection_provider.connection_pool).to have_received(:disconnect!)
-                  expect(Hermes::DistributedTrace.connection_pool).to have_received(:disconnect!)
+                  expect(configuration.database_connection_provider.connection_pool).to have_received(:disconnect!).at_least(1)
+                  expect(Hermes::DistributedTrace.connection_pool).to have_received(:disconnect!).at_least(1)
                 end
               end
 
