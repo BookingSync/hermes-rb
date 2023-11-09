@@ -26,7 +26,12 @@ module Hermes
               logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
               ensure_database_connection!
-              result = event_processor.call(event_class.to_s, body, headers)
+              begin
+                result = event_processor.call(event_class.to_s, body, headers)
+              rescue StandardError => error
+                rescue_from_closed_db_connection(error)
+                raise error
+              end
               event = result.event
               response = result.response
 
@@ -63,6 +68,13 @@ module Hermes
         def ensure_database_connection!
           config.database_connection_provider.connection.reconnect! if config.database_connection_provider
           Hermes::DistributedTrace.connection.reconnect! if config.store_distributed_traces?
+        end
+
+        def rescue_from_closed_db_connection(error)
+          if error.to_s.include?("PG::ConnectionBad")
+            config.database_connection_provider.connection_pool.disconnect! if config.database_connection_provider
+            Hermes::DistributedTrace.connection_pool.disconnect! if config.store_distributed_traces?
+          end
         end
       end
 
