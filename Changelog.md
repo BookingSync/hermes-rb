@@ -1,6 +1,6 @@
 # Changelog
 
-## Master
+## 0.9.1
 - Improve handling database connections when the server kills the connection
 
 ## 0.9.0
