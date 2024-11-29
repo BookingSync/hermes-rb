@@ -42,8 +42,6 @@ GEM
       json
     concurrent-ruby (1.2.2)
     connection_pool (2.4.1)
-    ddtrace (0.45.0)
-      msgpack
     diff-lcs (1.4.4)
     drb (2.2.0)
       ruby2_keywords
@@ -78,11 +76,10 @@ GEM
     ice_nine (0.11.2)
     json (2.6.3)
     minitest (5.20.0)
-    msgpack (1.4.2)
     multi_json (1.15.0)
     mutex_m (0.2.0)
     newrelic_rpm (6.15.0)
-    pg (1.2.3)
+    pg (1.5.9)
     rack (3.0.8)
     rake (13.0.1)
     rbtree (0.4.6)
@@ -120,7 +117,6 @@ PLATFORMS
 DEPENDENCIES
   appraisal
   bundler
-  ddtrace
   hermes-rb!
   newrelic_rpm
   pg

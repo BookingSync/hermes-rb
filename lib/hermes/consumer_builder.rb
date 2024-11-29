@@ -22,7 +22,9 @@ module Hermes
             registration = config.event_handler.registration_for(event_class)
 
             if registration.async?
-              config.background_processor.public_send(config.enqueue_method, event_class.to_s, body, headers)
+              config.background_processor.public_send(
+                config.enqueue_method, event_class.to_s, body.stringify_keys, headers.stringify_keys
+              )
               logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
               ensure_database_connection!
