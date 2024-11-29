@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.10.0
+- Make scheduling jobs compatible with Sidekiq strict args
+
 ## 0.9.1
 - Improve handling database connections when the server kills the connection
 
