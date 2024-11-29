@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.10.1
+- Use `as_json` to ensure scheduling jobs is compatible with Sidekiq strict args
+
 ## 0.10.0
 - Make scheduling jobs compatible with Sidekiq strict args
 
