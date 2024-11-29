@@ -23,7 +23,7 @@ module Hermes
 
             if registration.async?
               config.background_processor.public_send(
-                config.enqueue_method, event_class.to_s, body.stringify_keys, headers.stringify_keys
+                config.enqueue_method, event_class.to_s, body.as_json, headers.as_json
               )
               logger.log_enqueued(event_class, body, headers, config.clock.now)
             else
