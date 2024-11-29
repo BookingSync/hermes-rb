@@ -155,7 +155,7 @@ RSpec.describe Hermes::ConsumerBuilder, :freeze_time do
           process
 
           expect(background_processor.store).to eq [
-            ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }, { header: "value" }]
+            ["EventClassForTestingConsumerBuilder", { "bookingsync" => true }, { "header" => "value" }]
           ]
           expect(dummy_logger.log).to eq "[Hutch] enqueued: EventClassForTestingConsumerBuilder, headers: {:header=>\"value\"}, body: {\"bookingsync\"=>true} at 2020-01-01 12:00:00"
 
