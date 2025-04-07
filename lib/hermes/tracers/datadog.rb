@@ -1,4 +1,8 @@
-require "ddtrace"
+begin
+ require "datadog"
+rescue LoadError
+  require "ddtrace"
+end
 
 module Hermes
   module Tracers
