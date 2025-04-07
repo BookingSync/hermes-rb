@@ -3,7 +3,7 @@
     gem "activesupport", "~> #{version}.0"
     gem "activerecord", "~> #{version}.0"
 
-    if version.start_with?("7") || version.start_with?("8")
+    if version.start_with?("7.2") || version.start_with?("8")
       gem "datadog", '~> 2.0'
     else
       gem "ddtrace", "> 1.0"
