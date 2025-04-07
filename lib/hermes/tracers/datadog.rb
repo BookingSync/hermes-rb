@@ -20,10 +20,19 @@ module Hermes
         tracer.trace(
           klass.class.name || klass.class.to_s,
           service: "hermes",
-          span_type: "rabbitmq",
-          type: "rabbitmq"
+          span_type_key => "rabbitmq"
         ) do
           klass.process(message)
+        end
+      end
+
+      private
+
+      def span_type_key
+        if defined?(DDTrace)
+          :span_type
+        else
+          :type
         end
       end
     end
