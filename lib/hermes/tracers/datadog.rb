@@ -1,4 +1,8 @@
-require "ddtrace"
+begin
+ require "datadog"
+rescue LoadError
+  require "ddtrace"
+end
 
 module Hermes
   module Tracers
@@ -16,9 +20,19 @@ module Hermes
         tracer.trace(
           klass.class.name || klass.class.to_s,
           service: "hermes",
-          span_type: "rabbitmq"
+          span_type_key => "rabbitmq"
         ) do
           klass.process(message)
+        end
+      end
+
+      private
+
+      def span_type_key
+        if defined?(DDTrace)
+          :span_type
+        else
+          :type
         end
       end
     end

@@ -22,7 +22,7 @@ RSpec.describe Hermes::Tracers::Datadog do
     end
     let(:message) { double(:message) }
     let(:dd_tracer) do
-      if defined?(DDTrace)
+      if defined?(DDTrace) || (defined?(Datadog) && defined?(Datadog::Tracing))
         Datadog::Tracing
       else
         Datadog.tracer
@@ -36,8 +36,14 @@ RSpec.describe Hermes::Tracers::Datadog do
     it "uses Datadog tracer" do
       handle
 
-      expect(dd_tracer).to have_received(:trace).with("ClassName",
-        hash_including(service: "hermes", span_type: "rabbitmq"))
+
+      if defined?(DDTrace)
+        expect(dd_tracer).to have_received(:trace).with("ClassName",
+          hash_including(service: "hermes", span_type: "rabbitmq"))
+      else
+        expect(dd_tracer).to have_received(:trace).with("ClassName",
+          hash_including(service: "hermes", type: "rabbitmq"))
+      end
     end
 
     it "processes the message" do
