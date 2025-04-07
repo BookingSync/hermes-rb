@@ -22,7 +22,7 @@ RSpec.describe Hermes::Tracers::Datadog do
     end
     let(:message) { double(:message) }
     let(:dd_tracer) do
-      if defined?(DDTrace)
+      if defined?(DDTrace) || (defined?(Datadog) && defined?(Datadog::Tracing))
         Datadog::Tracing
       else
         Datadog.tracer
