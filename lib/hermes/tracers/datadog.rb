@@ -16,7 +16,8 @@ module Hermes
         tracer.trace(
           klass.class.name || klass.class.to_s,
           service: "hermes",
-          span_type: "rabbitmq"
+          span_type: "rabbitmq",
+          type: "rabbitmq"
         ) do
           klass.process(message)
         end

@@ -1,5 +1,10 @@
 # Changelog
 
+## Master
+- Make gem compatible with Datadog gem 2.0
+- Drop support for Rails < 6.1
+- Support Ruby 3.4
+
 ## 0.10.1
 - Use `as_json` to ensure scheduling jobs is compatible with Sidekiq strict args
 
