@@ -1,6 +1,6 @@
 # Changelog
 
-## Master
+## 0.11.0
 - Make gem compatible with Datadog gem 2.0
 - Drop support for Rails < 6.1
 - Support Ruby 3.4
